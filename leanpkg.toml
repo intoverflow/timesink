@@ -1,0 +1,8 @@
+[package]
+name = "timesink"
+version = "0.1"         # no semantic significance currently
+lean_version = "3.3.0"  # optional, prints a warning on mismatch with Lean executable
+path = "src"            # hard-coded, will be removed in the future
+timeout = 100           # optional, passed to `lean` as `-T` parameter
+
+[dependencies]
