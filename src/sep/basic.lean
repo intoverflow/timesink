@@ -18,13 +18,32 @@ structure Alg
     (comm : ∀ {x₁ x₂ x₃}, join x₁ x₂ x₃ → join x₂ x₁ x₃)
     (assoc₁ : ∀ {x₁ x₂ x₃ x₁x₂ x₁x₂x₃}
                 (H₁ : join x₁ x₂ x₁x₂) (H₂ : join x₁x₂ x₃ x₁x₂x₃)
-              , Alg.Assoc H₁ H₂)
+                {P : Prop}
+                (C : Alg.Assoc H₁ H₂ → P)
+              , P)
+
+-- inductive GenJoin {τ : Type ℓ} (j : τ → τ → set τ)
+--   : τ → τ → set τ
+-- | base : ∀ {x₁ x₂ x₃}, j x₁ x₂ x₃ → GenJoin x₁ x₂ x₃
+-- | comm : ∀ {x₁ x₂ x₃}, GenJoin x₁ x₂ x₃ → GenJoin x₂ x₁ x₃
+-- | assoc : ∀ {x₁ x₂ x₃ x₁x₂ x₁x₂x₃}
+--           , GenJoin x₁ x₂ x₁x₂
+--           → GenJoin x₁x₂ x₃ x₁x₂x₃
+--           → GenJoin x₁ begin end x₁x₂x₃
+
+-- def GenAlg {τ : Type ℓ} (j : τ → τ → set τ)
+--   : Alg.{ℓ}
+--  := { τ := τ
+--     , join := 
+--     }
 
 def Alg.assoc₂ (A : Alg.{ℓ})
   {x₁ x₂ x₃ x₂x₃ x₁x₂x₃}
   (H₁ : A.join x₂ x₃ x₂x₃) (H₂ : A.join x₁ x₂x₃ x₁x₂x₃)
-  : Alg.Assoc H₁ (A.comm H₂)
-:= A.assoc₁ H₁ (A.comm H₂)
+  {P : Prop}
+  (C : Alg.Assoc H₁ (A.comm H₂) → P)
+  : P
+:= A.assoc₁ H₁ (A.comm H₂) C
 
 def Set (A : Alg.{ℓ}) := set A.τ
 
@@ -43,6 +62,10 @@ def Set.nonempty {A : Alg.{ℓ}} (S : Set A) : Prop
 def EmptySet (A : Alg.{ℓ}) : Set A := λ a, false
 def WholeSet (A : Alg.{ℓ}) : Set A := λ a, true
 
+def Set.mem_nonempty {A : Alg.{ℓ}} {S : Set A}
+    {x} (H : x ∈ S)
+  : S ≠ ∅
+ := λ Q, cast (congr_fun Q x) H
 
 -- An equivalence relation on sets; happens to imply equality but is easier to prove
 def SetEq {A : Alg.{ℓ}} (S₁ S₂ : Set A) : Prop
@@ -117,7 +140,7 @@ def Alg.Join.elim {A : Alg.{ℓ}} {X₁ X₂ : Set A} {x₃}
 def Alg.join_Join (A : Alg.{ℓ}) {x₁ x₂ x₃}
   : A.join x₁ x₂ x₃ ↔ A.Join (eq x₁) (eq x₂) x₃
 := iff.intro
-     (λ H, Alg.Join.show (eq.refl x₁) (eq.refl x₂) H)
+     (λ H, Alg.Join.show rfl rfl H)
      (λ H, Alg.Join.elim H (λ x₁' x₂' H₁ H₂ Hx, begin rw [H₁, H₂], exact Hx end))
 
 -- The Join function is commutative
@@ -141,19 +164,21 @@ def Alg.Join.assoc (A : Alg.{ℓ}) {X₁ X₂ X₃ : Set A}
       refine iff.to_eq (iff.intro _ _),
       { intro H, cases H with x₁ H, cases H with x₂ H,
         cases H with H' H, cases H' with y₁ H', cases H' with y₂ H',
-        cases A.assoc₁ H'.2.2 H.2 with y₂x₂ ω₁ ω₂,
-        existsi y₁, existsi y₂x₂,
-        refine and.intro H'.1 (and.intro _ ω₂),
+        apply A.assoc₁ H'.2.2 H.2,
+        intro a,
+        existsi y₁, existsi a.x,
+        refine and.intro H'.1 (and.intro _ a.J₂),
         existsi y₂, existsi x₂,
-        refine and.intro H'.2.1 (and.intro H.1 ω₁)
+        refine and.intro H'.2.1 (and.intro H.1 a.J₁)
       },
       { intro H, cases H with x₁ H, cases H with x₂ H,
         cases H with X₁x₁ H, cases H with H' H, cases H' with y₁ H', cases H' with y₂ H',
-        cases A.assoc₁ (A.comm H'.2.2) (A.comm H) with y₁x₁ ω₁ ω₂,
-        existsi y₁x₁, existsi y₂,
-        refine and.intro _ (and.intro H'.2.1 (A.comm ω₂)),
+        apply A.assoc₁ (A.comm H'.2.2) (A.comm H),
+        intro a,
+        existsi a.x, existsi y₂,
+        refine and.intro _ (and.intro H'.2.1 (A.comm a.J₂)),
         existsi x₁, existsi y₁,
-        exact and.intro X₁x₁ (and.intro H'.1 (A.comm ω₁))
+        exact and.intro X₁x₁ (and.intro H'.1 (A.comm a.J₁))
       },
     end
 
@@ -162,32 +187,39 @@ def Alg.Join.assoc (A : Alg.{ℓ}) {X₁ X₂ X₃ : Set A}
 /- The "divides" relation
  -
  -/
-structure Alg.Divides (A : Alg.{ℓ}) (x₁ x₃ : A.τ)
- := (x : A.τ)
-    (j : A.join x₁ x x₃)
+def Alg.Divides (A : Alg.{ℓ}) (x₁ x₃ : A.τ)
+  : Prop
+ := ∀ {P : Prop} (C : ∀ {x}, A.join x₁ x x₃ → P)
+    , P
 
 -- Divides is transitive
 def Divides.trans {A : Alg.{ℓ}} {x₁ x₂ x₃}
   : A.Divides x₁ x₂ → A.Divides x₂ x₃ → A.Divides x₁ x₃
- := λ d₁₂ d₂₃
-    , let a := A.assoc₁ d₁₂.j d₂₃.j
-      in { x := a.x
-         , j := a.J₂
-         }
+ := λ d₁₂ d₂₃ P C
+    , begin
+        apply d₁₂, intros a₁ Ha₁,
+        apply d₂₃, intros a₂ Ha₂,
+        apply A.assoc₁ Ha₁ Ha₂,
+        intro a,
+        apply C,
+        apply a.J₂
+      end
 
 -- In a sep alg with identity, Divides is reflective
 def Divides.refl (A : Alg.{ℓ}) (A₁ : A.Ident) (x : A.τ)
   : A.Divides x x
- := { x := A₁.one
-    , j := A₁.join_one_r x
-    }
+ := λ P C
+    , begin
+        apply C,
+        apply A₁.join_one_r
+      end
 
 
 
 /- Units
  -
  -/
-def Alg.Unit (A : Alg.{ℓ}) (u : A.τ) : Type ℓ
+def Alg.Unit (A : Alg.{ℓ}) (u : A.τ) : Prop
  := ∀ x, A.Divides u x
 
 -- If w divides a unit, then w is also a unit
@@ -196,7 +228,7 @@ def Unit.Divides (A : Alg.{ℓ}) {u} (uUnit : A.Unit u) (w : A.τ)
  := begin
       intro H,
       intro x,
-      apply Divides.trans H,
+      apply Divides.trans @H,
       apply uUnit
     end
 
@@ -210,11 +242,11 @@ structure Alg.Prime (A : Alg.{ℓ}) (p : A.τ)
     (proper : A.Divides p u → false)
     (prime : ∀ {x₁ x₂ x₃}
              , A.join x₁ x₂ x₃ → A.Divides p x₃
-             → A.Divides p x₁ ⊕ A.Divides p x₂)
+             → A.Divides p x₁ ∨ A.Divides p x₂)
 
 
 
-/- Ideals
+/- Important kinds of sets
  -
  -/
 def Set.Ideal {A : Alg.{ℓ}} (I : Set A) : Prop
@@ -231,8 +263,17 @@ def Proper.one_not_elem {A : Alg.{ℓ}} (A₁ : A.Ident) {I : Set A} (Iideal : I
      exact Iproper.proper (Iideal H' (A₁.join_one_l Iproper.z))
    end
 
-def Set.Prime {A : Alg.{ℓ}} (I : Set A)
- := ∀ {x₁ x₂ x₃}, A.join x₁ x₂ x₃ → x₃ ∈ I → x₁ ∈ I ∨ x₂ ∈ I
+def Set.Closed {A : Alg.{ℓ}} (B : Set A) : Prop
+  := ∀ {b₁ b₂ b₃}
+     , b₃ ∈ A.join b₁ b₂
+     → b₁ ∈ B → b₂ ∈ B
+     → b₃ ∈ B
+
+def Set.Prime {A : Alg.{ℓ}} (I : Set A) : Prop
+ := ∀ {x₁ x₂ x₃}
+    , x₃ ∈ A.join x₁ x₂
+    → x₃ ∈ I
+    → x₁ ∈ I ∨ x₂ ∈ I
 
 -- The whole set is an ideal
 def TrivialIdeal (A : Alg.{ℓ}) : (WholeSet A).Ideal
@@ -252,30 +293,56 @@ def EmptyIdeal.Prime {A : Alg.{ℓ}} (A₁ : A.Ident) : (EmptySet A).Prime
 
 -- Ideal generated by a set of elements
 def GenIdeal {A : Alg.{ℓ}} (gen : Set A) : Set A
- := λ y, (gen y) ∨ (∃ x (H : A.Divides x y), gen x)
+ := λ y, (gen y) ∨ (∃ x, A.Divides x y ∧ gen x)
 
-def GenIdeal.Ideal (A : Alg.{ℓ}) (gen : Set A) : (GenIdeal gen).Ideal
+def GenIdeal.Ideal {A : Alg.{ℓ}} (gen : Set A) : (GenIdeal gen).Ideal
  := λ a₁ a₂ a₃ Ia₁ H
     , or.elim Ia₁
-        (λ gen_a₁, or.inr ⟨a₁, { x := a₂, j := H }, gen_a₁⟩)
+        (λ gen_a₁, or.inr ⟨a₁, (λ P C, C H), gen_a₁⟩)
         (λ r, begin
                 apply or.inr,
                 cases r with x r, cases r with r_div_y gen_r,
-                existsi x, existsi (Divides.trans r_div_y { x := a₂, j := H}),
-                assumption
+                existsi x,
+                refine and.intro _ gen_r,
+                apply Divides.trans @r_div_y,
+                exact (λ P C, C H)
               end)
 
 def GenIdeal.mem {A : Alg.{ℓ}} (gen : Set A)
   : gen ⊆ (GenIdeal gen)
 := λ x H, or.inl H
 
+def GenIdeal.nonempty {A : Alg.{ℓ}} {gen : Set A} (gen_notempty : gen ≠ ∅)
+  : GenIdeal gen ≠ ∅
+ := begin
+      intro H,
+      apply gen_notempty,
+      apply funext, intro x,
+      apply iff.to_eq,
+      apply iff.intro,
+      { intro G,
+        rw H.symm,
+        apply GenIdeal.mem,
+        assumption
+      },
+      { exact false.elim }
+    end
+
 -- Ideal generated by an element
-def GenIdeal₁ (A : Alg.{ℓ}) (x : A.τ) : Set A
+def Alg.GenIdeal₁ (A : Alg.{ℓ}) (x : A.τ) : Set A
  := GenIdeal (eq x)
 
-def GenIdeal₁_member {A : Alg.{ℓ}} (x : A.τ)
-  : x ∈ (GenIdeal₁ A x)
-:= GenIdeal.mem (eq x) (eq.refl x)
+def GenIdeal₁.Ideal {A : Alg.{ℓ}} (x : A.τ)
+  : (A.GenIdeal₁ x).Ideal
+ := @GenIdeal.Ideal A (eq x)
+
+def GenIdeal₁.nonempty {A : Alg.{ℓ}} (x : A.τ)
+  : A.GenIdeal₁ x ≠ ∅
+ := GenIdeal.nonempty (λ H, cast (congr_fun H x) rfl)
+
+def GenIdeal₁.mem {A : Alg.{ℓ}} (x : A.τ)
+  : x ∈ (A.GenIdeal₁ x)
+:= GenIdeal.mem (eq x) rfl
 
 
 
