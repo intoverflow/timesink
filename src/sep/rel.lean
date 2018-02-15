@@ -12,6 +12,10 @@ universes ℓ₁ ℓ₂ ℓ₃ ℓ₄
 def Rel (A₁ : Alg.{ℓ₁}) (A₂ : Alg.{ℓ₂})
   := A₁.τ → Set A₂
 
+instance Rel_has_le {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} : has_le (Rel A₁ A₂)
+ := { le := λ r₁ r₂, ∀ x, r₁ x ⊆ r₂ x
+    }
+
 -- An equivalence relation on relations; happens to imply equality but is easier to prove
 def RelEq {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r₁ r₂ : Rel A₁ A₂) : Prop
   := ∀ x₁ x₂, r₁ x₁ x₂ ↔ r₂ x₁ x₂
@@ -40,30 +44,90 @@ def RelEq.to_eq {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r₁ r₂ : Rel A�
     end
 
 
+-- The identity relation
+def Alg.IdRel (A : Alg.{ℓ₁})
+  : Rel A A
+ := λ x, eq x
+
+def Rel.Reflexive {A : Alg.{ℓ₁}} (r : Rel A A) : Prop
+  := A.IdRel ≤ r
+
+def Rel.Discrete {A : Alg.{ℓ₁}} (r : Rel A A) : Prop
+  := r ≤ A.IdRel
+
 -- Composition of relations
 def Rel_comp {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {A₃ : Alg.{ℓ₃}}
   : Rel A₂ A₃ → Rel A₁ A₂ → Rel A₁ A₃
 := λ r₂ r₁ x₁ x₃
    , ∃ x₂, r₁ x₁ x₂ ∧ r₂ x₂ x₃
 
+reserve infixr ` ∘ ` : 100
+infixr ` ∘ ` := λ {A₁} {A₂} {A₃}
+                  (r₂₃ : Rel A₂ A₃) (r₁₂ : Rel A₁ A₂)
+                , Rel_comp r₂₃ r₁₂
+
+def Rel_comp.id_l {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}}
+    (r : Rel A₁ A₂)
+  : Rel_comp A₂.IdRel r = r
+ := begin
+      apply RelEq.to_eq,
+      intros x₀ y₀,
+      apply iff.intro,
+      { intro H, cases H with y H,
+        cases H with R E,
+        simp [Alg.IdRel] at E,
+        subst E, assumption
+      },
+      { intro H,
+        existsi y₀,
+        exact and.intro H rfl
+      }
+    end
+
+def Rel_comp.id_r {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}}
+    (r : Rel A₁ A₂)
+  : Rel_comp r A₁.IdRel = r
+ := begin
+      apply RelEq.to_eq,
+      intros x₀ y₀,
+      apply iff.intro,
+      { intro H,
+        cases H with y H,
+        cases H with E R,
+        simp [Alg.IdRel] at E,
+        subst E, assumption
+      },
+      { intro H,
+        existsi x₀,
+        exact and.intro rfl H
+      }
+    end
+
+def Rel_comp.congr {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {A₃ : Alg.{ℓ₃}}
+    {s₁ s₂ : Rel A₂ A₃} {r₁ r₂ : Rel A₁ A₂}
+    (Es : s₁ = s₂) (Er : r₁ = r₂)
+  : s₁ ∘ r₁ = s₂ ∘ r₂
+ := begin subst Es, subst Er end
+
 -- Composition is associative
 def Rel_comp.assoc {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {A₃ : Alg.{ℓ₃}} {A₄ : Alg.{ℓ₄}}
-    (r₃₄ : Rel A₃ A₄) (r₂₃ : Rel A₂ A₃) (r₁₂ : Rel A₁ A₂)
-  : RelEq (Rel_comp (Rel_comp r₃₄ r₂₃) r₁₂) (Rel_comp r₃₄ (Rel_comp r₂₃ r₁₂))
- := λ x₁ x₄
-    , iff.intro
-        (λ H, begin
-                cases H with x₂ H, cases H with H₁₂ H,
-                cases H with x₃ H, cases H with H₂₃ H₃₄,
-                existsi x₃, refine and.intro _ H₃₄,
-                existsi x₂, exact and.intro H₁₂ H₂₃
-              end)
-        (λ H, begin
-                cases H with x₃ H, cases H with H H₃₄,
-                cases H with x₂ H, cases H with H₁₂ H₂₃,
-                existsi x₂, apply and.intro H₁₂,
-                existsi x₃, exact and.intro H₂₃ H₃₄
-              end)
+    {r₃₄ : Rel A₃ A₄} {r₂₃ : Rel A₂ A₃} {r₁₂ : Rel A₁ A₂}
+  : ((r₃₄ ∘ r₂₃) ∘ r₁₂) = (r₃₄ ∘ (r₂₃ ∘ r₁₂))
+ := RelEq.to_eq
+     (λ x₁ x₄
+      , iff.intro
+          (λ H, begin
+                  cases H with x₂ H, cases H with H₁₂ H,
+                  cases H with x₃ H, cases H with H₂₃ H₃₄,
+                  existsi x₃, refine and.intro _ H₃₄,
+                  existsi x₂, exact and.intro H₁₂ H₂₃
+                end)
+          (λ H, begin
+                  cases H with x₃ H, cases H with H H₃₄,
+                  cases H with x₂ H, cases H with H₁₂ H₂₃,
+                  existsi x₂, apply and.intro H₁₂,
+                  existsi x₃, exact and.intro H₂₃ H₃₄
+                end))
 
 -- The function induced by a relation
 def Rel.Fn {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (f : Rel A₁ A₂)
