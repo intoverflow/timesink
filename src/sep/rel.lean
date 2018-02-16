@@ -16,6 +16,13 @@ instance Rel_has_le {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} : has_le (Rel A�
  := { le := λ r₁ r₂, ∀ x, r₁ x ⊆ r₂ x
     }
 
+def Rel.WellDefined {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {x} {y₁ y₂}
+      (R₁ : r x y₁)
+      (R₂ : r x y₂)
+    , y₁ = y₂
+
+
 -- An equivalence relation on relations; happens to imply equality but is easier to prove
 def RelEq {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r₁ r₂ : Rel A₁ A₂) : Prop
   := ∀ x₁ x₂, r₁ x₁ x₂ ↔ r₂ x₁ x₂

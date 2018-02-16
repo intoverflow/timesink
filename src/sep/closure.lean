@@ -21,17 +21,15 @@ inductive rel {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
        , rel (τ.cl Jm n₁ n₂) m₃
 
 def rel.elim {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
-    {t : τ r} {rt} (R : rel t rt)
+    {x₀ : τ r} {y₀} (R : rel x₀ y₀)
     {P : Prop}
-    (Cbase : ∀ {x} {y}
-             , r x y
-             → t = τ.base r x
-             → rt = y
+    (Cbase : ∀ {x}
+             , r x y₀
+             → x₀ = τ.base r x
              → P)
-    (Ccl : ∀ {m₁ m₂ m₃} (Jm : m₃ ∈ A₂.join m₁ m₂)
+    (Ccl : ∀ {m₁ m₂} (Jm : y₀ ∈ A₂.join m₁ m₂)
              (n₁ n₂ : τ r)
-           , t = τ.cl Jm n₁ n₂
-           → rt = m₃
+           , x₀ = τ.cl Jm n₁ n₂
            → P)
   : P
  := begin
@@ -44,8 +42,25 @@ inductive valid {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : τ r → Prop
 | base : ∀ {x}, valid (τ.base r x)
 | cl : ∀ {m₁ m₂ m₃} (Jm : m₃ ∈ A₂.join m₁ m₂)
-         {n₁ n₂ : τ r} (R₁ : rel n₁ m₁) (R₂ : rel n₂ m₂)
+         {n₁ n₂ : τ r} (V₁ : valid n₁) (V₂ : valid n₂)
+         (R₁ : rel n₁ m₁) (R₂ : rel n₂ m₂)
        , valid (τ.cl Jm n₁ n₂)
+
+def valid.elim {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    {x₀ : τ r} (V : valid r x₀)
+    {P : Prop}
+    (base : ∀ {x} (E : x₀ = τ.base r x), P)
+    (cl : ∀ {m₁ m₂ m₃} (Jm : m₃ ∈ A₂.join m₁ m₂)
+            {n₁ n₂ : τ r} (V₁ : valid r n₁) (V₂ : valid r n₂)
+            (R₁ : rel n₁ m₁) (R₂ : rel n₂ m₂)
+            (E : x₀ = τ.cl Jm n₁ n₂)
+          , P)
+  : P
+ := begin
+      cases V,
+      { apply base, trivial },
+      { apply cl Jm V₁ V₂, repeat { assumption }, trivial }
+    end
 
 inductive join {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : {k // valid r k} → {k // valid r k} → {k // valid r k} → Prop
@@ -65,28 +80,28 @@ inductive join {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
 def join.elim {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
     {x₁ x₂ x₃} (Jn : join r x₁ x₂ x₃)
     {P : Prop}
-    (Cbase : ∀ {n₁ n₂ n₃}
-               (Jn : A₁.join n₁ n₂ n₃)
-               (E₁ : x₁ = { val := τ.base r n₁
-                          , property := valid.base r })
-               (E₂ : x₂ = { val := τ.base r n₂
-                          , property := valid.base r })
-               (E₃ : x₃ = { val := τ.base r n₃
-                          , property := valid.base r })
-             , P)
-    (Ccl : ∀ {m₁' m₂' m₁ m₂ m₃}
-             (n₃₁ n₃₂ : {k // valid r k})
-             (Jm : m₃ ∈ A₂.join m₁ m₂)
-             (Jm' : m₃ ∈ A₂.join m₁' m₂')
-             (V₃ : valid r (τ.cl Jm n₃₁ n₃₂))
-             (R₁ : rel x₁.val m₁') (R₂ : rel x₂.val m₂')
-             (E : x₃ = { val := τ.cl Jm n₃₁ n₃₂, property := V₃ })
-           , P)
+    (base : ∀ {n₁ n₂ n₃}
+              (Jn : A₁.join n₁ n₂ n₃)
+              (E₁ : x₁ = { val := τ.base r n₁
+                         , property := valid.base r })
+              (E₂ : x₂ = { val := τ.base r n₂
+                         , property := valid.base r })
+              (E₃ : x₃ = { val := τ.base r n₃
+                         , property := valid.base r })
+            , P)
+    (cl : ∀ {m₁' m₂' m₁ m₂ m₃}
+            (n₃₁ n₃₂ : {k // valid r k})
+            (Jm : m₃ ∈ A₂.join m₁ m₂)
+            (Jm' : m₃ ∈ A₂.join m₁' m₂')
+            (V₃ : valid r (τ.cl Jm n₃₁ n₃₂))
+            (R₁ : rel x₁.val m₁') (R₂ : rel x₂.val m₂')
+            (E : x₃ = { val := τ.cl Jm n₃₁ n₃₂, property := V₃ })
+          , P)
   : P
  := begin
       cases Jn,
-      { apply Cbase, repeat { assumption }, repeat { trivial } },
-      { apply Ccl _ _ Jm Jm', repeat { assumption }, repeat { trivial } }
+      { apply base, repeat { assumption }, repeat { trivial } },
+      { apply cl _ _ Jm Jm', repeat { assumption }, repeat { trivial } }
     end
 
 def join.comm {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
@@ -133,7 +148,7 @@ def join.assoc {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
                     , J₁ := _
                     , J₂ := _
                     },
-          { constructor, constructor, exact Hy.2.2, assumption },
+          { exact valid.cl _ t.property c₃.property (rel.base Hy.2.2) R₂₂ },
           { constructor, exact a.J₁, constructor, exact Hy.2.2, assumption },
           { constructor, exact a.J₂, constructor, exact Hy.2.1, constructor }
         }
@@ -146,12 +161,10 @@ def join.assoc {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
           subst E,
 
           apply rel.elim R₂₁,
-          { intros x y R E₁ E₂, cases E₁ },
-          intros m₁ m₂ m₃ Jm n₁ n₂ E₁ E₂,
+          { intros x R E₁, cases E₁ },
+          intros m₁ m₂ Jm n₁ n₂ E₁,
           injection E₁ with E'₁ E'₂ E'₃ E'₄ E'₅, clear E₁,
           subst E'₁, subst E'₂, subst E'₃, subst E'₄, subst E'₅,
-          subst E₂,
-
           apply A₂.assoc Jm₁' Jm₂', intro a,
           refine C  { x := { val := τ.cl a.J₁ c₂ c₃
                            , property := _
@@ -159,7 +172,7 @@ def join.assoc {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
                     , J₁ := _
                     , J₂ := _
                     },
-          { constructor, repeat {assumption} },
+          { exact valid.cl _ c₂.property c₃.property R₁₂ R₂₂ },
           { constructor, exact a.J₁, repeat {assumption} },
           { constructor, exact a.J₂, repeat {assumption}, constructor }
         }
@@ -187,7 +200,7 @@ def Rel.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.
       intros n₁ n₂ m₁ m₂ m₃ R₁ R₂ Jm,
       refine exists.intro
               { val := τ.cl Jm n₁.val n₂.val
-              , property := valid.cl Jm R₁ R₂
+              , property := valid.cl Jm n₁.property n₂.property R₁ R₂
               }
               _,
       apply and.intro,
@@ -204,9 +217,9 @@ def Rel.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Re
       { intros x₁ x₂ x₃ Jn E₁ E₂ E₃,
         subst E₁, subst E₂, subst E₃,
         apply rel.elim R,
-        { intros x y Rxy E₁ E₂,
+        { intros x Rxy E₁,
           injection E₁ with E₁', clear E₁,
-          subst E₁', subst E₂,
+          subst E₁',
           have Hy := rUC Jn Rxy,
           cases Hy with y₁ Hy,
           cases Hy with y₂ Hy,
@@ -216,17 +229,15 @@ def Rel.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Re
           { constructor, exact Hy.2.1 },
           { constructor, exact Hy.2.2 }
         },
-        { intros y₁ y₂ y₃ Jy x₁ x₂ E₁ E₂,
-          cases E₁ }
+        { intros y₁ y₂ Jy x₁ x₂ E₁, cases E₁ }
       },
       { intros y₁' y₂' y₁ y₂ y₃ x₃₁ x₃₂ Jy Jy' V₃ R₁ R₂ E,
         subst E,
         apply rel.elim R,
-        { intros x y Rxy E₁ E₂, cases E₁ },
-        { intros z₁ z₂ z₃ Jz w₁ w₂ E₁ E₂,
+        { intros x Rxy E₁, cases E₁ },
+        { intros z₁ z₂ Jz w₁ w₂ E₁,
           injection E₁ with E₁' E₂' E₃' E₄' E₅', clear E₁,
           subst E₁', subst E₂', subst E₃', subst E₄', subst E₅',
-          subst E₂,
           existsi y₁', existsi y₂',
           apply and.intro Jy',
           apply and.intro,
@@ -321,7 +332,7 @@ def To.NotDownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Se
       have RB₂ := rel.base Rn₂m₂,
       let cl_m₃ : { k // valid r k }
                 := { val := τ.cl Jm base_n₁ base_n₂
-                  , property := valid.cl Jm RB₁ RB₂
+                  , property := valid.cl Jm base_n₁.property base_n₂.property RB₁ RB₂
                   },
       have JB : (Alg @rUC).join base_n₁ base_n₂ cl_m₃, from
         begin constructor, repeat { assumption } end,
@@ -360,7 +371,7 @@ def FromTo {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁
 
 def Factor {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
-  : (Rel @rUC ∘ To @rUC) = r
+  : Rel @rUC ∘ To @rUC = r
  := begin
       apply RelEq.to_eq,
       intros x y,
@@ -372,12 +383,11 @@ def Factor {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁
         apply To.elim R₁,
         intro E, injection E with E', clear E, subst E',
         apply rel.elim R₂,
-        { intros x₁ y₂ R' E₁ E₂,
+        { intros x₁ R' E₁,
           simp at E₁, injection E₁ with E₁', clear E₁, subst E₁',
-          subst E₂,
           assumption
         },
-        { intros m₁ m₂ m₃ Jm n₁ n₂ E₁ E₂, cases E₁ }
+        { intros m₁ m₂ Jm n₁ n₂ E₁, cases E₁ }
       },
       { intro R,
         let t : { k // valid r k }
@@ -413,13 +423,6 @@ def {ℓ₀} Extend {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep
   : Sep.Rel A₀ (Alg @rUC)
  := sorry
 
-def {ℓ₀} Extend.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {A₀ : Sep.Alg.{ℓ₀}}
-    (s : Sep.Rel A₀ A₁)
-  : r ∘ s ≤ Rel @rUC ∘ Extend @rUC s
- := sorry
-
 def {ℓ₀} Extend.Maximal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
     {A₀ : Sep.Alg.{ℓ₀}}
@@ -428,6 +431,14 @@ def {ℓ₀} Extend.Maximal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} 
     (extend'GT : r ∘ s ≤ Rel @rUC ∘ extend')
   : extend' ≤ Extend @rUC s
  := sorry
+
+-- Follows from Extend.Maximal?
+-- def {ℓ₀} Extend.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+--     (rUC : r.UpClosed)
+--     {A₀ : Sep.Alg.{ℓ₀}}
+--     (s : Sep.Rel A₀ A₁)
+--   : r ∘ s ≤ Rel @rUC ∘ Extend @rUC s
+--  := sorry
 
 def {ℓ₀} Extend.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
@@ -450,340 +461,198 @@ def {ℓ₀} Extend.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂
 /- Universal property of the downwards closure
  -
  -/
-inductive UnivTo' {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+inductive UnivTo {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
     {B₁ : Sep.Alg.{ℓ₂}}
     (to' : Sep.Rel A₁ B₁)
     (rel' : Sep.Rel B₁ A₂)
   : Sep.Rel (Alg @rUC) B₁
 | base : ∀ {x} {b} (T : to' x b)
-         , UnivTo' { val := τ.base r x
+         , UnivTo { val := τ.base r x
                    , property := valid.base r
                    }
                    b
-| cl : ∀ {m₁ m₂ m₃} {n₁ n₂}
-         (Jm : m₃ ∈ A₂.join m₁ m₂) (V₃)
+| cl : ∀ {m₁ m₂ m₃} {n₁ n₂} (V₁) (V₂)
+         (Jm : m₃ ∈ A₂.join m₁ m₂) (V)
          {b₁ b₂ b₃} (Jb : b₃ ∈ B₁.join b₁ b₂)
-         (U₁ : UnivTo' n₁ b₁)
-         (U₂ : UnivTo' n₂ b₂)
-         (R'₁ : rel' b₁ m₁)
-         (R'₂ : rel' b₂ m₂)
-         (R'₃ : rel' b₃ m₃)
-       , UnivTo' { val := τ.cl Jm n₁.val n₂.val
-                 , property := V₃
+         (U₁ : UnivTo { val := n₁, property := V₁ } b₁)
+         (U₂ : UnivTo { val := n₂, property := V₂ } b₂)
+       , UnivTo { val := τ.cl Jm n₁ n₂
+                 , property := V
                  }
                  b₃
 
-def UnivTo'.elim {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    {rUC : r.UpClosed}
-    {B₁ : Sep.Alg.{ℓ₂}}
-    {to' : Sep.Rel A₁ B₁}
-    {rel' : Sep.Rel B₁ A₂}
-    {x₀} {b₀} (U : UnivTo' @rUC to' rel' x₀ b₀)
-    {P : Prop}
-    (base : ∀ {x} (T : to' x b₀)
-              (E : x₀ = { val := τ.base r x, property := valid.base r})
-            , P)
-    (cl : ∀ {m₁ m₂ m₃} {n₁ n₂}
-            (Jm : m₃ ∈ A₂.join m₁ m₂) (V₃)
-            {b₁ b₂} (Jb : b₀ ∈ B₁.join b₁ b₂)
-            (U₁ : UnivTo' @rUC to' rel' n₁ b₁)
-            (U₂ : UnivTo' @rUC to' rel' n₂ b₂)
-            (R'₁ : rel' b₁ m₁)
-            (R'₂ : rel' b₂ m₂)
-            (R'₃ : rel' b₀ m₃)
-            (E : x₀ = { val := τ.cl Jm n₁.val n₂.val, property := V₃ })
-          , P)
-  : P
- := begin
-      cases U,
-      { apply base, assumption, trivial },
-      { apply cl Jm, repeat {assumption}, repeat {trivial} }
-    end
+-- def UnivTo.elim {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+--     {rUC : r.UpClosed}
+--     {B₁ : Sep.Alg.{ℓ₂}}
+--     {to' : Sep.Rel A₁ B₁}
+--     {rel' : Sep.Rel B₁ A₂}
+--     {x₀} {b₀} (U : UnivTo @rUC to' rel' x₀ b₀)
+--     {P : Prop}
+--     (base : ∀ {x} (T : to' x b₀)
+--               (E : x₀ = { val := τ.base r x, property := valid.base r})
+--             , P)
+--     (cl : ∀ {m₁ m₂ m₃} {n₁ n₂} (V₁) (V₂)
+--             (Jm : m₃ ∈ A₂.join m₁ m₂) (V)
+--             {b₁ b₂} (Jb : b₀ ∈ B₁.join b₁ b₂)
+--             (U₁ : UnivTo @rUC to' rel' { val := n₁, property := V₁ } b₁)
+--             (U₂ : UnivTo @rUC to' rel' { val := n₂, property := V₂ } b₂)
+--             (Rb₁ : rel' b₁ m₁)
+--             (Rb₂ : rel' b₂ m₂)
+--             (Rb : rel' b₀ m₃)
+--             (E : x₀ = { val := τ.cl Jm n₁ n₂, property := V })
+--           , P)
+--   : P
+--  := begin
+--       cases U,
+--       { apply base, assumption, trivial },
+--       { apply cl /- V₁ V₂ -/ Jm, repeat {assumption}, repeat {trivial} }
+--     end
 
-def UnivTo'.To {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    {rUC : r.UpClosed}
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-    (rel' : Sep.Rel B₁ A₂)
-  : to' = UnivTo' @rUC to' rel' ∘ To @rUC
- := sorry
-
-def UnivTo'.Rel {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    {to' : Sep.Rel A₁ B₁}
-    {rel' : Sep.Rel B₁ A₂}
-    -- (to'UC : to'.UpClosed)
-    (rel'eq : r = rel' ∘ to')
-  : Rel @rUC = rel' ∘ UnivTo' @rUC to' rel'
- := begin
-      apply RelEq.to_eq,
-      intro x₀,
-      cases x₀ with x₀ V₀,
-      induction x₀ with x,
-      { intro y₀
-        , apply iff.intro,
-        { intro Rxy₀,
-          apply Rxy₀.elim; clear Rxy₀,
-          { intros x' y' Rxy E₁ E₂,
-            injection E₁ with E₁'; clear E₁,
-            subst E₁', subst E₂,
-            have Rxy' : ((rel' ∘ to') x y₀), from
-              begin rw rel'eq at Rxy, assumption end,
-            cases Rxy' with b Hb,
-            existsi b,
-            refine and.intro _ Hb.2,
-            constructor,
-            exact Hb.1
-          },
-          { intros m₁ m₂ m₃ Jm n₁ n₂ E₁ E₂,
-            cases E₁
-          }
-        },
-        { intro Q,
-          cases Q with b Q,
-          cases Q with U Rby₀,
-          constructor,
-          rw rel'eq,
-          existsi b,
-          apply U.elim,
-          { intros x' T' E,
-            injection E with E'; clear E,
-            injection E' with E''; clear E',
-            subst E'',
-            apply and.intro,
-            repeat {assumption}
-          },
-          { intros m₁ m₂ m₃ n₁ n₂ Jm V₃ b₁ b₂ Jb U₁ U₂ R₁ R₂ R₃ E₁,
-            cases E₁
-          }
-        }
-      },
-      { intro y₀,
-        apply iff.intro,
-        { intro R₃,
-          apply R₃.elim,
-          { intros x y R E, cases E },
-          { intros y₁ y₂ y₃ Jy x₁ x₂ E₁ E₂,
-            injection E₁ with E'₁ E'₂ E'₃ E'₄ E'₅; clear E₁,
-            subst E'₁, subst E'₂, subst E'₃, subst E'₄, subst E'₅, subst E₂,
-            exact sorry -- use induction hypothesis
-          }
-        },
-        { simp,
-          exact sorry -- i hope it's true
-        }
-      },
-    end
-
-def UnivTo'.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+def UnivTo.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
     {B₁ : Sep.Alg.{ℓ₂}}
     {to' : Sep.Rel A₁ B₁}
     {rel' : Sep.Rel B₁ A₂}
     (to'UC : to'.UpClosed)
     -- (rel'UC : rel'.UpClosed)
-    (rel'eq : r = rel' ∘ to')
-  : (UnivTo' @rUC to' rel').UpClosed
+    -- (rel'eq : r = rel' ∘ to')
+  : (UnivTo @rUC to' rel').UpClosed
  := sorry
 
-def UnivTo'.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
+def UnivTo.To {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    {rUC : r.UpClosed}
     {B₁ : Sep.Alg.{ℓ₂}}
     (to' : Sep.Rel A₁ B₁)
     (rel' : Sep.Rel B₁ A₂)
-  : (to' ∘ From @rUC) ≤ UnivTo' @rUC to' rel'
- := sorry
-
-
-
-/- This part is junk I think
- -
- -/
-
-def UnivTo {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-  : Sep.Rel (Alg @rUC) B₁
- := to' ∘ From @rUC
-
-def UnivTo.To {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-  : to' = UnivTo @rUC to' ∘ To @rUC
+  : to' = UnivTo @rUC to' rel' ∘ To @rUC
  := begin
-      apply eq.trans (Rel_comp.id_r _).symm,
-      refine eq.trans _ Rel_comp.assoc.symm,
-      exact Rel_comp.congr rfl FromTo.symm,
+      apply RelEq.to_eq,
+      intros x₀ y₀,
+      apply iff.intro,
+      { intro Tx₀y₀,
+        let t : { k // valid r k }
+             := { val := τ.base r x₀
+                , property := valid.base r
+                },
+        existsi t,
+        apply and.intro,
+        { constructor },
+        { constructor, assumption }
+      },
+      { intro Q, cases Q with x Q,
+        cases Q with T U,
+        cases U,
+        { apply T.elim,
+          intro E,
+          injection E with E'; clear E,
+          injection E' with E''; clear E',
+          subst E'',
+          assumption
+        },
+        { apply T.elim, intro E, cases E }
+      }
     end
 
-def UnivTo.Defect {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+def UnivTo.Maximal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
     {B₁ : Sep.Alg.{ℓ₂}}
     {to' : Sep.Rel A₁ B₁}
     {rel' : Sep.Rel B₁ A₂}
-    (E : rel' ∘ to' = r)
-  : rel' ∘ UnivTo @rUC to' = r ∘ From @rUC
+    {uto' : Sep.Rel (Alg @rUC) B₁}
+    (Eto' : to' = uto' ∘ To @rUC)
+    (uto'UC : uto'.UpClosed)
+  : uto' ≤ UnivTo @rUC to' rel'
  := begin
-      apply eq.trans Rel_comp.assoc.symm,
-      apply Rel_comp.congr E rfl
-    end
-
-
-/- Back to the good stuff
- -
- -/
-
-def UnivFrom {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (fr' : Sep.Rel B₁ A₁)
-  : Sep.Rel B₁ (Alg @rUC)
- := To @rUC ∘ fr'
-
-def UnivFrom.From {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (fr' : Sep.Rel B₁ A₁)
-  : fr' = From @rUC ∘ UnivFrom @rUC fr'
- := begin
-      apply eq.trans (Rel_comp.id_l _).symm,
-      refine eq.trans _ Rel_comp.assoc,
-      refine Rel_comp.congr FromTo.symm rfl
-    end
-
-
-def UnivTo.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-    (to'UC : to'.UpClosed)
-  : (UnivTo @rUC to').UpClosed
- := sorry -- follows from composition of upclosed functions
-
-def UnivFrom.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (fr' : Sep.Rel B₁ A₁)
-    (fr'UC : fr'.UpClosed)
-  : (UnivFrom @rUC fr').UpClosed
- := sorry
-
-def UnivFrom.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (fr' : Sep.Rel B₁ A₁)
-    (fr'DC : fr'.DownClosed)
-  : (UnivFrom @rUC fr').DownClosed
- := sorry
-
-
-def UnivFromTo {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-    (fr' : Sep.Rel B₁ A₁)
-    (E : fr' ∘ to' = A₁.IdRel)
-  : UnivFrom @rUC fr' ∘ UnivTo @rUC to' = To @rUC ∘ From @rUC
- := begin
-      apply eq.trans Rel_comp.assoc,
-      apply eq.trans (Rel_comp.congr rfl Rel_comp.assoc.symm),
-      apply eq.trans (Rel_comp.congr rfl (Rel_comp.congr E rfl)),
-      exact Rel_comp.congr rfl (Rel_comp.id_l _)
-    end
-
-def UnivToFrom {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-    (fr' : Sep.Rel B₁ A₁)
-  : UnivTo @rUC to' ∘ UnivFrom @rUC fr' = to' ∘ fr'
- := begin
-      apply eq.trans Rel_comp.assoc,
-      apply Rel_comp.congr rfl,
-      apply eq.trans Rel_comp.assoc.symm,
-      apply eq.trans _ (Rel_comp.id_l _),
-      exact Rel_comp.congr FromTo rfl
-    end
-
-
-def UnivFactor {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-    (rel' : Sep.Rel B₁ A₂)
-    (E : rel' ∘ to' = r)
-  : (rel' ∘ UnivTo @rUC to' ∘ To @rUC) = r
- := begin
-      refine eq.trans _ E,
-      apply eq.trans (Rel_comp.congr rfl Rel_comp.assoc),
-      apply eq.trans Rel_comp.assoc.symm,
-      apply eq.trans (Rel_comp.congr rfl FromTo),
-      apply Rel_comp.id_r
-    end
-
-def Rel.UnivGT₁ {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (to' : Sep.Rel A₁ B₁)
-    (rel' : Sep.Rel B₁ A₂)
-    (E : rel' ∘ to' = r)
-  : rel' ∘ UnivTo @rUC to' ≤ Rel @rUC
- := begin
-      have H : rel' ∘ UnivTo @rUC to' = r ∘ From @rUC
-            := UnivTo.Defect @rUC E,
+      intro x₀,
+      cases x₀ with x₀ V₀,
       simp at *,
-      rw H,
-      apply Rel.GT
-    end
-
-def Rel.UnivGT₂ {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {B₁ : Sep.Alg.{ℓ₂}}
-    (fr' : Sep.Rel B₁ A₁)
-    (to' : Sep.Rel A₁ B₁)
-    (rel' : Sep.Rel B₁ A₂)
-    (E : rel' ∘ to' = r)
-    (TF : to' ∘ fr' ≤ B₁.IdRel)
-  : Rel @rUC ∘ UnivFrom @rUC fr' ≤ rel'
- := begin
-      intros x₀ y₀ H,
-      cases H with z H,
-      cases z with z Vz,
-      cases H with Uz Rz,
-      cases Uz with x H,
-      cases H with F'x Tx,
-      apply Rz.elim,
-      { intros x₁ y₁ R₁ E₁ E₂,
-        simp at E₁, subst E₁, subst E₂,
-        simp at E, rw E.symm at R₁,
-        cases R₁ with b H,
-        cases H with T'b R'b,
-        apply Tx.elim,
-        intro E,
-        injection E with E'; clear E,
-        injection E' with E''; clear E',
-        subst E'',
-        have H : x₀ = b, from
-          begin
-            apply TF,
-            existsi x₁,
-            apply and.intro,
-            repeat { assumption }
-          end,
-        subst H,
-        assumption
+      induction x₀ with x₀,
+      { intros b₃ T'b₃,
+        constructor,
+        rw Eto',
+        let t : { k // valid r k }
+             := { val := τ.base r x₀, property := valid.base r },
+        existsi t,
+        refine and.intro _ T'b₃,
+        constructor
       },
-      { intros m₁ m₂ m₃ Jm n₁ n₂ E₁ E₂,
-        simp at E₁, subst E₁, subst E₂,
-        apply Tx.elim,
-        intro E₀, cases E₀
+      { intros b₃ T'b₃,
+        apply V₀.elim,
+        { intros x E, cases E },
+        { intros p₁ p₂ p₃ Jm q₁ q₂ Vq₁ Vq₂ Rq₁ Rq₂ E,
+          injection E with E₁ E₂ E₃ E₄ E₅; clear E,
+          subst E₁, subst E₂, subst E₃, subst E₄, subst E₅,
+          have Jn : (Alg @rUC).join ⟨n₁, Vq₁⟩ ⟨n₂, Vq₂⟩ ⟨τ.cl Jm n₁ n₂, V₀⟩, from
+            begin
+              apply join.cl ⟨n₁, Vq₁⟩ ⟨n₂, Vq₂⟩ ⟨n₁, Vq₁⟩ ⟨n₂, Vq₂⟩,
+              repeat { assumption }
+            end,
+          have Hb := uto'UC Jn T'b₃ ; clear Jn T'b₃,
+          cases Hb with b₁ Hb,
+          cases Hb with b₂ Hb,
+          cases Hb with Jb Hb,
+          have Q₁ := ih_1 Vq₁ Hb.1; clear ih_1,
+          have Q₂ := ih_2 Vq₂ Hb.2; clear ih_2,
+          apply UnivTo.cl Vq₁ Vq₂ Jm V₀ Jb Q₁ Q₂; clear Jm V₀ Jb,
+        }
       }
     end
 
+def Rel.Minimal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {B₁ : Sep.Alg.{ℓ₂}}
+    {to' : Sep.Rel A₁ B₁}
+    {rel' : Sep.Rel B₁ A₂}
+    (rel'eq : r = rel' ∘ to')
+    (rel'DC : rel'.DownClosed)
+  : Rel @rUC ≤ rel' ∘ UnivTo @rUC to' rel'
+ := begin
+      intro x₀,
+      cases x₀ with x₀ V₀,
+      induction x₀ with x₀,
+      { intros y₀ Rxy,
+        apply Rxy.elim ; clear Rxy,
+        { intros x' Rxy E₁,
+          injection E₁ with E₁'; clear E₁,
+          subst E₁',
+          have Rxy' : ((rel' ∘ to') x₀ y₀), from
+            begin rw rel'eq at Rxy, assumption end,
+          cases Rxy' with b Hb,
+          existsi b,
+          refine and.intro _ Hb.2,
+          constructor,
+          exact Hb.1
+        },
+        { intros m₁ m₂ Jm n₁ n₂ E₁, cases E₁ }
+      },
+      { intros y₀ Rxy,
+        apply Rxy.elim ; clear Rxy,
+        { intros x R E, cases E },
+        { intros y₁ y₂ Jy x₁ x₂ E₁,
+          injection E₁ with E'₁ E'₂ E'₃ E'₄ E'₅; clear E₁,
+          subst E'₁, subst E'₂, subst E'₃, subst E'₄, subst E'₅,
+          apply V₀.elim,
+          { intros x E, cases E },
+          { intros p₁ p₂ p₃ Jp q₁ q₂ Vq₁ Vq₂ Rq₁ Rq₂ E,
+            injection E with E₁ E₂ E₃ E₄ E₅; clear E,
+            subst E₁, subst E₂, subst E₃, subst E₄, subst E₅,
+            have Q₁ := ih_1 Vq₁ Rq₁; clear ih_1,
+            have Q₂ := ih_2 Vq₂ Rq₂; clear ih_2,
+            cases Q₁ with b₁ Q₁,
+            cases Q₁ with U₁ Rb₁,
+            cases Q₂ with b₂ Q₂,
+            cases Q₂ with U₂ Rb₂,
+            have Q := rel'DC Rb₁ Rb₂ Jm,
+            cases Q with b₃ Q,
+            cases Q with Rb₃ Jb,
+            existsi b₃,
+            refine and.intro _ Rb₃,
+            constructor, repeat { assumption }
+          }
+        }
+      }
+    end
 
 end DownCl
 
