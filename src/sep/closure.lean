@@ -402,6 +402,51 @@ def Rel.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁
     end
 
 
+
+/- Maximal extension of relations into the downards closure
+ -
+ -/
+def {ℓ₀} Extend {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    (s : Sep.Rel A₀ A₁)
+  : Sep.Rel A₀ (Alg @rUC)
+ := sorry
+
+def {ℓ₀} Extend.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    (s : Sep.Rel A₀ A₁)
+  : r ∘ s ≤ Rel @rUC ∘ Extend @rUC s
+ := sorry
+
+def {ℓ₀} Extend.Maximal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    {s : Sep.Rel A₀ A₁}
+    (extend' : Sep.Rel A₀ (Alg @rUC))
+    (extend'GT : r ∘ s ≤ Rel @rUC ∘ extend')
+  : extend' ≤ Extend @rUC s
+ := sorry
+
+def {ℓ₀} Extend.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    {s : Sep.Rel A₀ A₁}
+    (sUC : s.UpClosed)
+  : (Extend @rUC s).UpClosed
+ := sorry
+
+def {ℓ₀} Extend.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    {s : Sep.Rel A₀ A₁}
+    (sDC : s.DownClosed)
+  : (Extend @rUC s).DownClosed
+ := sorry
+
+
+
 /- Universal property of the downwards closure
  -
  -/
