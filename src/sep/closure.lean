@@ -1,10 +1,10 @@
 /- Donwards closure. (Work in progress)
  -
- - Given an upwards closed relation r : X → Y, we construct
+ - Given an upwards closed relation r : X .→ Y, we construct
  - an algebra K and relations
- -   to : X → K    (upwards closed)
- -   from : K → X  (upwards and downwards closed)
- -   cl : K → Y   (upwards and downwards closed)
+ -   to : X .→ K    (upwards closed)
+ -   from : K .→ X  (upwards and downwards closed)
+ -   cl : K .→ Y   (upwards and downwards closed)
  - satisfying
  -   r = cl ∘ to
  -   from ∘ to = eq X
@@ -12,24 +12,24 @@
  -
  - We have some basic facts:
  -   * If `to` is downards closed, then so is `r`.
- -   * Every relation `s : A → X` which is upwards and downwards
- -     closed extends to a relation `e : A → K` which is also
+ -   * Every relation `s : A .→ X` which is upwards and downwards
+ -     closed extends to a relation `e : A .→ K` which is also
  -     upwards and downards closed, and which satisfies
  -       r ∘ s ≤ cl ∘ e
  -     Furthermore, `e` is the "weakest" such relation: for every other
- -     relation `e' : A → K` which is both upwards and downards closed
+ -     relation `e' : A .→ K` which is both upwards and downards closed
  -     and which satisfies r ∘ s ≤ cl ∘ e', we have
  -       e' ⊆ e
  -
  - We also have the following characteristic property:
  -
- - For all other factorizations `r = X -to'-> K' -cl'-> Y` with
+ - For all other factorizations `r = X .-to'→ K' .-cl'→ Y` with
  - `to'` upwards closed and `cl'` both upwards and downwards closed,
- - there exists an upwards-closed relation `u : K -> K'` such that
+ - there exists an upwards-closed relation `u : K .→ K'` such that
  -   to' = u ∘ to    (factorization of to')
  -   cl ⊆ cl' ∘ u    (cl "stronger" than cl')
  - Lastly, `u` is the "weakest" upwards-closed relation satisfying these
- - two conditions: for all other upwards-closed `u' : K -> K'`
+ - two conditions: for all other upwards-closed `u' : K .→ K'`
  - satisfying the two conditions above, we have
  -   u' ⊆ u
  -
