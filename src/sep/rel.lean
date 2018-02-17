@@ -267,7 +267,7 @@ def Rel.FnKernPrime_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A�
 
 
 -- Preservation of ideals, multiplicative sets, prime sets, and division
-def Rel.MultSetPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+def Rel.FnMultSetPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {S : Set A₁} (Smult : S.MultSet)
     , (r.Fn S).MultSet
 
@@ -538,7 +538,7 @@ def DownClosed.QuasiClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (f : Rel 
 
 def DownClosed.MultSetPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
     (rDC : r.DownClosed)
-  : r.MultSetPres
+  : r.FnMultSetPres
  := begin
       intros S Smult,
       intros b₁ b₂ b₃ Jb Sb₁ Sb₂,
@@ -550,6 +550,7 @@ def DownClosed.MultSetPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel 
       exact Rel.Fn.show _ Sa₃ Ra₃b₃
     end
 
+-- This condition is too strong
 def Rel.QuasiDownClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {n₁ n₂ n₃} {m₁ m₂ m₃}
      , r n₁ m₁ → r n₂ m₂ → r n₃ m₃

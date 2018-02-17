@@ -1,4 +1,37 @@
-/- Donwards and upwards closure
+/- Donwards closure. (Work in progress)
+ -
+ - Given an upwards closed relation r : X → Y, we construct
+ - an algebra K and relations
+ -   to : X → K    (upwards closed)
+ -   from : K → X  (upwards and downwards closed)
+ -   cl : K → Y   (upwards and downwards closed)
+ - satisfying
+ -   r = cl ∘ to
+ -   from ∘ to = eq X
+ -   to ∘ from ⊆ eq K
+ -
+ - We have some basic facts:
+ -   * If `to` is downards closed, then so is `r`.
+ -   * Every relation `s : A → X` which is upwards and downwards
+ -     closed extends to a relation `e : A → K` which is also
+ -     upwards and downards closed, and which satisfies
+ -       r ∘ s ≤ cl ∘ e
+ -     Furthermore, `e` is the "weakest" such relation: for every other
+ -     relation `e' : A → K` which is both upwards and downards closed
+ -     and which satisfies r ∘ s ≤ cl ∘ e', we have
+ -       e' ⊆ e
+ -
+ - We also have the following characteristic property:
+ -
+ - For all other factorizations `r = X -to'-> K' -cl'-> Y` with
+ - `to'` upwards closed and `cl'` both upwards and downwards closed,
+ - there exists an upwards-closed relation `u : K -> K'` such that
+ -   to' = u ∘ to    (factorization of to')
+ -   cl ⊆ cl' ∘ u    (cl "stronger" than cl')
+ - Lastly, `u` is the "weakest" upwards-closed relation satisfying these
+ - two conditions: for all other upwards-closed `u' : K -> K'`
+ - satisfying the two conditions above, we have
+ -   u' ⊆ u
  -
  -/
 import .rel
@@ -104,6 +137,30 @@ def join.elim {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
       { apply cl _ _ Jm Jm', repeat { assumption }, repeat { trivial } }
     end
 
+--
+-- Can we strengthen join to get this eliminator?
+-- It would imply UnivTo.UpClosed...
+--
+-- def join.elim' {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+--     {x₁ x₂ x₃} (Jn : join r x₁ x₂ x₃)
+--     {P : Prop}
+--     (base : ∀ {n₁ n₂ n₃}
+--               (Jn : A₁.join n₁ n₂ n₃)
+--               (E₁ : x₁ = { val := τ.base r n₁
+--                          , property := valid.base r })
+--               (E₂ : x₂ = { val := τ.base r n₂
+--                          , property := valid.base r })
+--               (E₃ : x₃ = { val := τ.base r n₃
+--                          , property := valid.base r })
+--             , P)
+--     (cl : ∀ {m₁' m₂' m₁ m₂ m₃}
+--             (Jm : m₃ ∈ A₂.join m₁ m₂)
+--             (R₁ : rel x₁.val m₁') (R₂ : rel x₂.val m₂')
+--             (E : x₃.val = τ.cl Jm x₁ x₂)
+--           , P)
+--   : P
+--  := sorry
+
 def join.comm {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
     {t₁ t₂ t₃} (J : join r t₁ t₂ t₃)
   : join r t₂ t₁ t₃
@@ -179,6 +236,7 @@ def join.assoc {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
       }
     end
 
+
 def Alg {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
     (rUC : r.UpClosed)
   : Alg
@@ -192,6 +250,18 @@ def Rel {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Rel A₁ A₂}
     (rUC : r.UpClosed)
   : Rel (Alg @rUC) A₂
  := λ x, rel x.val
+
+inductive To {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+  : Sep.Rel A₁ (Alg @rUC)
+| base : ∀ x, To x { val := τ.base r x, property := valid.base r }
+
+inductive From {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+  : Sep.Rel (Alg @rUC) A₁
+| base : ∀ x, From { val := τ.base r x, property := valid.base r } x
+
+
 
 def Rel.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
@@ -247,10 +317,56 @@ def Rel.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Re
       }
     end
 
-inductive From {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+
+def To.elim {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    {rUC : r.UpClosed}
+    {x} {y} (Txy : To @rUC x y)
+    {P : Prop}
+    (base : y = { val := τ.base r x, property := valid.base r } → P)
+  : P
+ := begin
+      cases Txy,
+      { exact base rfl }
+    end
+
+def To.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
-  : Sep.Rel (Alg @rUC) A₁
-| base : ∀ x, From { val := τ.base r x, property := valid.base r } x
+  : (To @rUC).UpClosed
+ := begin
+      intros m₁ m₂ m₃ n₃ Jm R₃,
+      let t₁ : (Alg @rUC).τ := { val := τ.base r m₁, property := valid.base r },
+      let t₂ : (Alg @rUC).τ := { val := τ.base r m₂, property := valid.base r },
+      existsi t₁, existsi t₂,
+      apply and.intro,
+      { cases R₃, constructor, assumption },
+      apply and.intro,
+      repeat { constructor }
+    end
+
+def To.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+  : (To @rUC).DownClosed → r.DownClosed
+ := begin
+      intro tDC,
+      intros n₁ n₂ m₁ m₂ m₃ Rn₁m₁ Rn₂m₂ Jm,
+      let base_n₁ : { k // valid r k }
+                  := { val := τ.base r n₁, property := valid.base r },
+      let base_n₂ : { k // valid r k }
+                  := { val := τ.base r n₂, property := valid.base r },
+      have RB₁ := rel.base Rn₁m₁,
+      have RB₂ := rel.base Rn₂m₂,
+      let cl_m₃ : { k // valid r k }
+                := { val := τ.cl Jm base_n₁ base_n₂
+                  , property := valid.cl Jm base_n₁.property base_n₂.property RB₁ RB₂
+                  },
+      have Jx : (Alg @rUC).join base_n₁ base_n₂ cl_m₃, from
+        begin constructor, repeat { assumption } end,
+      have H := tDC (To.base @rUC n₁) (To.base @rUC n₂) Jx,
+      cases H with z Hz,
+      apply Hz.1.elim,
+      { intro E, cases E }
+    end
+
 
 def From.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
@@ -288,59 +404,16 @@ def From.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.R
     end
 
 
-inductive To {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-  : Sep.Rel A₁ (Alg @rUC)
-| base : ∀ x, To x { val := τ.base r x, property := valid.base r }
-
-def To.elim {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+def ToFrom {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     {rUC : r.UpClosed}
-    {x} {y} (Txy : To @rUC x y)
-    {P : Prop}
-    (C : y = { val := τ.base r x, property := valid.base r } → P)
-  : P
+  : To @rUC ∘ From @rUC ≤ (Alg @rUC).IdRel
  := begin
-      cases Txy,
-      exact C rfl
-    end
-
-def To.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-  : (To @rUC).UpClosed
- := begin
-      intros m₁ m₂ m₃ n₃ Jm R₃,
-      let t₁ : (Alg @rUC).τ := { val := τ.base r m₁, property := valid.base r },
-      let t₂ : (Alg @rUC).τ := { val := τ.base r m₂, property := valid.base r },
-      existsi t₁, existsi t₂,
-      apply and.intro,
-      { cases R₃, constructor, assumption },
-      apply and.intro,
-      repeat { constructor }
-    end
-
-def To.NotDownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-  : (To @rUC).DownClosed → r.DownClosed
- := begin
-      intro tDC,
-      intros n₁ n₂ m₁ m₂ m₃ Rn₁m₁ Rn₂m₂ Jm,
-      let base_n₁ : { k // valid r k }
-                  := { val := τ.base r n₁, property := valid.base r },
-      let base_n₂ : { k // valid r k }
-                  := { val := τ.base r n₂, property := valid.base r },
-      have RB₁ := rel.base Rn₁m₁,
-      have RB₂ := rel.base Rn₂m₂,
-      let cl_m₃ : { k // valid r k }
-                := { val := τ.cl Jm base_n₁ base_n₂
-                  , property := valid.cl Jm base_n₁.property base_n₂.property RB₁ RB₂
-                  },
-      have JB : (Alg @rUC).join base_n₁ base_n₂ cl_m₃, from
-        begin constructor, repeat { assumption } end,
-      have H := tDC (To.base @rUC n₁) (To.base @rUC n₂) JB,
-      cases H with z Hz,
-      existsi z,
-      refine and.intro _ Hz.2,
-      cases Hz.1
+      intros n₁ n₂ H,
+      cases H with x H,
+      cases H with F T,
+      cases F,
+      cases T,
+      exact rfl
     end
 
 def FromTo {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
@@ -399,7 +472,7 @@ def Factor {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁
       }
     end
 
-def Rel.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+def Rel.Minimal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     {rUC : r.UpClosed}
   : r ∘ From @rUC ≤ Rel @rUC
  := begin
@@ -410,52 +483,6 @@ def Rel.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁
       constructor,
       assumption
     end
-
-
-
-/- Maximal extension of relations into the downards closure
- -
- -/
-def {ℓ₀} Extend {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {A₀ : Sep.Alg.{ℓ₀}}
-    (s : Sep.Rel A₀ A₁)
-  : Sep.Rel A₀ (Alg @rUC)
- := sorry
-
-def {ℓ₀} Extend.Maximal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {A₀ : Sep.Alg.{ℓ₀}}
-    {s : Sep.Rel A₀ A₁}
-    (extend' : Sep.Rel A₀ (Alg @rUC))
-    (extend'GT : r ∘ s ≤ Rel @rUC ∘ extend')
-  : extend' ≤ Extend @rUC s
- := sorry
-
--- Follows from Extend.Maximal?
--- def {ℓ₀} Extend.GT {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
---     (rUC : r.UpClosed)
---     {A₀ : Sep.Alg.{ℓ₀}}
---     (s : Sep.Rel A₀ A₁)
---   : r ∘ s ≤ Rel @rUC ∘ Extend @rUC s
---  := sorry
-
-def {ℓ₀} Extend.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {A₀ : Sep.Alg.{ℓ₀}}
-    {s : Sep.Rel A₀ A₁}
-    (sUC : s.UpClosed)
-  : (Extend @rUC s).UpClosed
- := sorry
-
-def {ℓ₀} Extend.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
-    (rUC : r.UpClosed)
-    {A₀ : Sep.Alg.{ℓ₀}}
-    {s : Sep.Rel A₀ A₁}
-    (sDC : s.DownClosed)
-  : (Extend @rUC s).DownClosed
- := sorry
-
 
 
 /- Universal property of the downwards closure
@@ -482,33 +509,8 @@ inductive UnivTo {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Re
                  }
                  b₃
 
--- def UnivTo.elim {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
---     {rUC : r.UpClosed}
---     {B₁ : Sep.Alg.{ℓ₂}}
---     {to' : Sep.Rel A₁ B₁}
---     {rel' : Sep.Rel B₁ A₂}
---     {x₀} {b₀} (U : UnivTo @rUC to' rel' x₀ b₀)
---     {P : Prop}
---     (base : ∀ {x} (T : to' x b₀)
---               (E : x₀ = { val := τ.base r x, property := valid.base r})
---             , P)
---     (cl : ∀ {m₁ m₂ m₃} {n₁ n₂} (V₁) (V₂)
---             (Jm : m₃ ∈ A₂.join m₁ m₂) (V)
---             {b₁ b₂} (Jb : b₀ ∈ B₁.join b₁ b₂)
---             (U₁ : UnivTo @rUC to' rel' { val := n₁, property := V₁ } b₁)
---             (U₂ : UnivTo @rUC to' rel' { val := n₂, property := V₂ } b₂)
---             (Rb₁ : rel' b₁ m₁)
---             (Rb₂ : rel' b₂ m₂)
---             (Rb : rel' b₀ m₃)
---             (E : x₀ = { val := τ.cl Jm n₁ n₂, property := V })
---           , P)
---   : P
---  := begin
---       cases U,
---       { apply base, assumption, trivial },
---       { apply cl /- V₁ V₂ -/ Jm, repeat {assumption}, repeat {trivial} }
---     end
 
+-- We can prove it if we have Jx.elim'
 def UnivTo.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
     {B₁ : Sep.Alg.{ℓ₂}}
@@ -519,6 +521,39 @@ def UnivTo.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep
     -- (rel'eq : r = rel' ∘ to')
   : (UnivTo @rUC to' rel').UpClosed
  := sorry
+--  := begin
+--       intros q₁ q₂ q₃ n₃' Jx Ux₃n₃,
+--       cases Ux₃n₃; clear Ux₃n₃,
+--       { apply Jx.elim; clear Jx,
+--         { intros,
+--           subst E₁, subst E₂,
+--           injection E₃ with E; clear E₃,
+--           injection E with E'; clear E,
+--           subst E',
+--           have H := to'UC Jn T,
+--           cases H with b₁ H,
+--           cases H with b₂ H,
+--           existsi b₁, existsi b₂,
+--           apply and.intro H.1,
+--           apply and.intro,
+--           { constructor, exact H.2.1 },
+--           { constructor, exact H.2.2 }
+--         },
+--         { intros, cases E }
+--       },
+--       { apply Jx.elim'; clear Jx,
+--         { intros, cases E₃ },
+--         { intros,
+--           injection E with E₁ E₂ E₃ E₄ E₅; clear E,
+--           subst E₁, subst E₂, subst E₃, subst E₄, subst E₅,
+--           existsi b₁, existsi b₂,
+--           apply and.intro Jb,
+--           apply and.intro,
+--           { cases q₁ with q₁ V₁, exact U₁ },
+--           { cases q₂ with q₂ V₂, exact U₂ }
+--         }
+--       }
+--     end
 
 def UnivTo.To {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     {rUC : r.UpClosed}
@@ -554,7 +589,7 @@ def UnivTo.To {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A
       }
     end
 
-def UnivTo.Maximal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+def UnivTo.Weakest {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
     {B₁ : Sep.Alg.{ℓ₂}}
     {to' : Sep.Rel A₁ B₁}
@@ -599,7 +634,7 @@ def UnivTo.Maximal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.
       }
     end
 
-def Rel.Minimal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+def Rel.Strongest {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
     (rUC : r.UpClosed)
     {B₁ : Sep.Alg.{ℓ₂}}
     {to' : Sep.Rel A₁ B₁}
@@ -653,6 +688,42 @@ def Rel.Minimal {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel
         }
       }
     end
+
+
+/- Maximal extension of relations into the downards closure
+ -
+ -/
+def {ℓ₀} Extend {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    (s : Sep.Rel A₀ A₁)
+  : Sep.Rel A₀ (Alg @rUC)
+ := sorry
+
+def {ℓ₀} Extend.Weakest {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    {s : Sep.Rel A₀ A₁}
+    (extend' : Sep.Rel A₀ (Alg @rUC))
+    (extend'GT : r ∘ s ≤ Rel @rUC ∘ extend')
+  : extend' ≤ Extend @rUC s
+ := sorry
+
+def {ℓ₀} Extend.UpClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    {s : Sep.Rel A₀ A₁}
+    (sUC : s.UpClosed)
+  : (Extend @rUC s).UpClosed
+ := sorry
+
+def {ℓ₀} Extend.DownClosed {A₁ : Sep.Alg.{ℓ₁}} {A₂ : Sep.Alg.{ℓ₂}} {r : Sep.Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {A₀ : Sep.Alg.{ℓ₀}}
+    {s : Sep.Rel A₀ A₁}
+    (sDC : s.DownClosed)
+  : (Extend @rUC s).DownClosed
+ := sorry
 
 end DownCl
 
