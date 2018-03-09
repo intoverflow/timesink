@@ -5,7 +5,7 @@ namespace Sep
 universes ℓ ℓ₁ ℓ₂ ℓ₃ ℓ₄
 
 -- Separation algebras
-structure Alg.Assoc {A' : Type ℓ} {join : A' → A' → set A'}
+structure Alg.Assoc {A' : Type ℓ} (join : A' → A' → set A')
   {x₁ x₂ x₃ x₁x₂ x₁x₂x₃}
   (H₁ : join x₁ x₂ x₁x₂) (H₂ : join x₁x₂ x₃ x₁x₂x₃)
  := (x : A')
@@ -16,7 +16,7 @@ def IsAssoc {A' : Type ℓ} (join : A' → A' → set A') : Prop
  := ∀ {x₁ x₂ x₃ x₁x₂ x₁x₂x₃}
       (H₁ : join x₁ x₂ x₁x₂) (H₂ : join x₁x₂ x₃ x₁x₂x₃)
       {P : Prop}
-      (C : Alg.Assoc H₁ H₂ → P)
+      (C : Alg.Assoc join H₁ H₂ → P)
     , P
 
 structure Alg
@@ -43,6 +43,9 @@ def Set.nonempty {A : Alg.{ℓ}} (S : Set A) : Prop
 
 def EmptySet (A : Alg.{ℓ}) : Set A := λ a, false
 def WholeSet (A : Alg.{ℓ}) : Set A := λ a, true
+
+def Set.Compl {A : Alg.{ℓ}} (S : Set A) : Set A
+ := set.compl S
 
 def Set.mem_nonempty {A : Alg.{ℓ}} {S : Set A}
     {x} (H : x ∈ S)
@@ -171,7 +174,7 @@ def Alg.Join.assoc (A : Alg.{ℓ}) {X₁ X₂ X₃ : Set A}
  -/
 def Alg.Divides (A : Alg.{ℓ}) (x₁ x₃ : A.τ)
   : Prop
- := ∀ {P : Prop}
+ := ∀ (P : Prop)
       (C₁ : ∀ {x}, A.join x₁ x x₃ → P)
       (C₂ : x₁ = x₃ → P)
     , P
@@ -213,15 +216,46 @@ def Alg.Unit (A : Alg.{ℓ}) (u : A.τ) : Prop
  := ∀ x, A.Divides u x
 
 -- If w divides a unit, then w is also a unit
-def Unit.Divides (A : Alg.{ℓ}) {u} (uUnit : A.Unit u) (w : A.τ)
-  : A.Divides w u → A.Unit w
+def Unit.Divides {A : Alg.{ℓ}} {u} (uUnit : A.Unit u) (v : A.τ)
+  : A.Divides v u → A.Unit v
  := begin
       intro H,
       intro x,
-      apply Divides.trans @H,
+      apply Divides.trans H,
       apply uUnit
     end
 
+-- Distinct units join with each other to form new units
+def Unit.Join {A : Alg.{ℓ}}
+    {u₁} (Uu₁ : A.Unit u₁)
+    {u₂} (Uu₂ : A.Unit u₂)
+    {P : Prop}
+    (C : ∀ u₃, u₃ ∈ A.join u₁ u₂ → A.Unit u₃ → P)
+    (E : u₁ = u₂ → P)
+  : P
+ := begin
+      apply Uu₁ u₂,
+      { intros w Jw,
+        apply Uu₂ w,
+        { intros v Jv,
+          apply A.assoc (A.comm Jv) (A.comm Jw),
+          intro a,
+          apply C a.x (A.comm a.J₁),
+          apply Unit.Divides Uu₂,
+          intros P C₁ C₂,
+          exact C₁ (A.comm a.J₂)
+        },
+        { intro E', subst E', apply C, repeat { assumption } }
+      },
+      { exact E }
+    end
+
+def Alg.WeakIdentity (A : Alg.{ℓ}) (w : A.τ) : Prop
+ := ∀ (x), A.join w x x
+
+def WeakIdentity.Unit {A : Alg.{ℓ}} {w : A.τ} (wWeak : A.WeakIdentity w)
+  : A.Unit w
+ := λ x P C₁ C₂, C₁ (wWeak x)
 
 
 /- Primes
@@ -242,60 +276,208 @@ structure Alg.Prime (A : Alg.{ℓ}) (p : A.τ)
 def Set.Ideal {A : Alg.{ℓ}} (I : Set A) : Prop
  := ∀ {x₁ x₂ x₃}, x₁ ∈ I → A.join x₁ x₂ x₃ → x₃ ∈ I
 
-structure Set.Proper {A : Alg.{ℓ}} (I : Set A)
- := (z : A.τ)
-    (proper : ¬ z ∈ I)
+def Ideal.Overlap {A : Alg.{ℓ}} (I S : Set A)
+  : Set A
+ := λ x, x ∈ I ∧ (∃ y, (y ∈ S) ∧ (∀ {z}, ¬ A.join x y z))
+
+infix <-> := Ideal.Overlap
+
+def Overlap.Ideal {A : Alg.{ℓ}} {I₁ I₂ : Set A}
+  (I₁ideal : I₁.Ideal)
+  : (I₁ <-> I₂).Ideal
+ := begin
+      intros x₁ x₂ x₃ Ix₁ Jx,
+      apply and.intro (I₁ideal Ix₁.1 Jx),
+      cases Ix₁ with Ix₁ Hy,
+      cases Hy with y Hy,
+      existsi y,
+      apply and.intro Hy.1,
+      intros z Jz,
+      apply A.assoc (A.comm Jx) Jz, intro a,
+      apply Hy.2 a.J₁
+    end
+
+def Set.WeakIdeal {A : Alg.{ℓ}} (I : Set A) : Prop
+ := ∀ {x₁ x₂ x₃}, x₁ ∈ I → A.join x₁ x₂ x₃ → ∃ x₃', A.join x₁ x₂ x₃' ∧ x₃' ∈ I
+
+def Ideal.WeakIdeal {A : Alg.{ℓ}} (I : Set A)
+  : I.Ideal → I.WeakIdeal
+ := λ IIdeal x₁ x₂ x₃ Ix₁ Jx
+    , exists.intro x₃ (and.intro Jx (IIdeal Ix₁ Jx))
+
+def Set.Proper {A : Alg.{ℓ}} (I : Set A)
+  : Prop
+ := ∀ {P : Prop} (C : ∀ z, ¬ z ∈ I → P), P
 
 def Proper.one_not_elem {A : Alg.{ℓ}} (A₁ : A.Ident) {I : Set A} (Iideal : I.Ideal) (Iproper : I.Proper)
   : ¬ A₁.one ∈ I
 := begin
      intro H',
-     exact Iproper.proper (Iideal H' (A₁.join_one_l Iproper.z))
+     apply Iproper,
+     intros z Hz,
+     apply Hz,
+     exact Iideal H' (A₁.join_one_l z)
    end
 
-def Set.MultSet {A : Alg.{ℓ}} (S : Set A) : Prop
-  := ∀ {b₁ b₂ b₃}
+-- A set S is a sub-algebra if it associates
+def Set.SubAlg {A : Alg.{ℓ}} (S : Set A) : Prop
+ := ∀ (x₁ x₂ x₃ x₁₂ x₁₂₃ : {x // S x})
+      (H₁ : A.join x₁ x₂ x₁₂) (H₂ : A.join x₁₂ x₃ x₁₂₃)
+      {P : Prop}
+      (C : ∀ (a : Alg.Assoc A.join H₁ H₂), a.x ∈ S → P)
+    , P
+
+-- Subalgebras are, of course, algebras
+def Set.SubAlg.Alg {A : Alg.{ℓ}} {S : Set A}
+    (SSA : S.SubAlg)
+  : Alg.{ℓ}
+ := { τ := { x // S x}
+    , join := λ x₁ x₂ x₃, A.join x₁.val x₂.val x₃.val
+    , comm := λ x₁ x₂ x₃ J, A.comm J
+    , assoc := λ x₁ x₂ x₃ x₁₂ x₁₂₃ J₁₂ J₁₂₃ P C
+               , begin
+                  apply SSA _ _ _ _ _ J₁₂ J₁₂₃,
+                  intros a Sa,
+                  apply C,
+                  exact { x := { val := a.x, property := Sa }
+                        , J₁ := a.J₁
+                        , J₂ := a.J₂
+                        }
+                 end
+    }
+
+-- A set S is join-closed if:  S <*> S ⊆ S
+def Set.JoinClosed {A : Alg.{ℓ}} (S : Set A) : Prop
+  := ∀ (b₁ b₂ b₃)
      , b₃ ∈ A.join b₁ b₂
      → b₁ ∈ S → b₂ ∈ S
      → b₃ ∈ S
 
--- The multiplicative set generated by a set of elements
-inductive GenMultSet {A : Alg.{ℓ}} (S : Set A)
-  : Set A
-| gen : ∀ {x}, x ∈ S → GenMultSet x
-| mul : ∀ {x₁ x₂ x₃}
-        , x₃ ∈ A.join x₁ x₂
-        → GenMultSet x₁
-        → GenMultSet x₂
-        → GenMultSet x₃
-
-def GenMultSet.MultSet {A : Alg.{ℓ}} (S : Set A)
-  : (GenMultSet S).MultSet
+-- Join-closed sets are subalgebras in a very strong way
+def Set.JoinClosed.assoc {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+    {s₁ s₂ s₃ s₁₂ s₁₂₃}
+    {J₁₂ : s₁₂ ∈ A.join s₁ s₂}
+    {J₁₂₃ : s₁₂₃ ∈ A.join s₁₂ s₃}
+    (a : Alg.Assoc A.join J₁₂ J₁₂₃)
+    (S₁ : s₁ ∈ S) (S₂ : s₂ ∈ S) (S₃ : s₃ ∈ S)
+  : a.x ∈ S
  := begin
-      intros x₁ x₂ x₃ Jx Gx₁ Gx₂,
-      exact GenMultSet.mul Jx Gx₁ Gx₂
+      apply SJC _ _ _ a.J₁,
+      repeat { assumption }
     end
 
+def Set.JoinClosed.SubAlg {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+  : S.SubAlg
+ := begin
+      intros x₁ x₂ x₃ x₁₂ x₁₂₃ J₁₂ J₁₂₃ P C,
+      apply A.assoc J₁₂ J₁₂₃,
+      intro a,
+      have Ha := Set.JoinClosed.assoc SJC a x₁.property x₂.property x₃.property,
+      exact C a Ha
+    end
+
+def Set.JoinClosed.Alg {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+  : Alg.{ℓ}
+ := SJC.SubAlg.Alg
+
+-- The join-closure of a set of elements
+inductive JoinClosure {A : Alg.{ℓ}} (S : Set A)
+  : Set A
+| gen : ∀ {x}, x ∈ S → JoinClosure x
+| mul : ∀ {x₁ x₂ x₃}
+        , x₃ ∈ A.join x₁ x₂
+        → JoinClosure x₁
+        → JoinClosure x₂
+        → JoinClosure x₃
+
+def JoinClosure.JoinClosed {A : Alg.{ℓ}} (S : Set A)
+  : (JoinClosure S).JoinClosed
+ := begin
+      intros x₁ x₂ x₃ Jx Gx₁ Gx₂,
+      exact JoinClosure.mul Jx Gx₁ Gx₂
+    end
+
+-- A set S is prime if:  a <*> b ∩ S ≠ ∅ implies a ∈ S or b ∈ S
 def Set.Prime {A : Alg.{ℓ}} (I : Set A) : Prop
  := ∀ {x₁ x₂ x₃}
     , x₃ ∈ A.join x₁ x₂
     → x₃ ∈ I
     → x₁ ∈ I ∨ x₂ ∈ I
 
+-- A set S is full if:  a <*> b ∩ S ≠ ∅ implies a <*> b ⊆ S
+def Set.Full {A : Alg.{ℓ}} (p : Set A) : Prop
+ := ∀ {x₁ x₂ x₃}
+    , x₃ ∈ A.join x₁ x₂
+    → x₃ ∈ p
+    → A.join x₁ x₂ ⊆ p
+
+-- Prime ideals are full
+def PrimeIdeal.Full {A : Alg.{ℓ}} {p : Set A}
+    (pPrime : p.Prime)
+    (pIdeal : p.Ideal)
+  : p.Full
+ := begin
+      intros x₁ x₂ x₃ Jx Px x₃' Jx',
+      cases pPrime Jx Px with H₁ H₂,
+      { exact pIdeal H₁ Jx' },
+      { exact pIdeal H₂ (A.comm Jx') }
+    end
+
+-- The complement of a prime set is join-closed
+def Set.Prime.Complement_JoinClosed {A : Alg.{ℓ}} {p : Set A}
+    (pPrime : p.Prime)
+  : p.Compl.JoinClosed
+ := begin
+      intros x₁ x₂ x₃ Jx Px₁ Px₂,
+      intro Px₃,
+      cases pPrime Jx Px₃ with Px₁' Px₂',
+      { exact Px₁ Px₁' },
+      { exact Px₂ Px₂' }
+    end
+
+-- Classically, the complement of a join-closed set is a prime set
+def Set.JoinClosed.Complement_Prime {A : Alg.{ℓ}} {S : Set A}
+    (S_ExcludedMiddle : ∀ x, (x ∈ S) ∨ (¬ x ∈ S))
+    (SJC : S.JoinClosed)
+  : S.Compl.Prime
+ := begin
+      intros x₁ x₂ x₃ Jx Sx₃,
+      cases S_ExcludedMiddle x₁ with Sx₁ Sx₁,
+      { cases S_ExcludedMiddle x₂ with Sx₂ Sx₂,
+        { apply false.elim, apply Sx₃,
+          exact SJC _ _ _ Jx Sx₁ Sx₂
+        },
+        { exact or.inr Sx₂ }
+      },
+      { exact or.inl Sx₁ }
+    end
+
 -- The whole set is an ideal
-def TrivialIdeal (A : Alg.{ℓ}) : (WholeSet A).Ideal
+def WholeIdeal (A : Alg.{ℓ}) : (WholeSet A).Ideal
  := λ x₁ x₂ x₃ Ix₁ H, Ix₁
+
+-- The whole set is join-closed
+def WholeJoinClosed (A : Alg.{ℓ}) : (WholeSet A).JoinClosed
+ := λ x₁ x₂ x₃ Jx H₁ H₂, true.intro
+
+-- The whole set is a prime set
+def WholePrime (A : Alg.{ℓ}) : (WholeSet A).Prime
+ := λ x₁ x₂ x₃ Jx H, or.inl true.intro
 
 -- The empty set is an ideal
 def EmptyIdeal (A : Alg.{ℓ}) : (EmptySet A).Ideal
  := λ x₁ x₂ x₃ Ix₁ H, Ix₁
 
 -- In a separation algebra with identity, the empty set is a proper set
-def EmptyIdeal.Proper {A : Alg.{ℓ}} (A₁ : A.Ident) : (EmptySet A).Proper
- := { z := A₁.one, proper := false.elim }
+def EmptyProper.Proper {A : Alg.{ℓ}} (A₁ : A.Ident) : (EmptySet A).Proper
+ := λ P C, C A₁.one false.elim
 
--- In a separation algebra with identity, the empty set is a prime ideal
-def EmptyIdeal.Prime {A : Alg.{ℓ}} (A₁ : A.Ident) : (EmptySet A).Prime
+-- The empty set is join-closed
+def EmptyJoinClosed (A : Alg.{ℓ}) : (EmptySet A).JoinClosed
+ := λ x₁ x₂ x₃ Jx H₁ H₂, false.elim H₁
+
+-- The empty set is a prime set
+def EmptyPrime (A : Alg.{ℓ}) : (EmptySet A).Prime
  := λ x₁ x₂ x₃ H, false.elim
 
 -- Ideal generated by a set of elements
@@ -460,13 +642,12 @@ def GenPrime₁.mem {A : Alg.{ℓ}} (x : A.τ)
 
 
 -- -- Intersections
--- def IntersectionIdeal {A : Alg.{ℓ}} (I₁ I₂ : A.Ideal) : A.Ideal
--- := { elem := λ y, I₁.elem y ∧ I₂.elem y
---    , ideal_l := λ x₁ x₂ x₃ Ix₁ H
---                 , and.intro
---                     (I₁.ideal_l Ix₁.1 H)
---                     (I₂.ideal_l Ix₁.2 H)
---    }
+def IntersectionIdeal {A : Alg.{ℓ}} {I₁ I₂ : Set A}
+    (I₁Ideal : I₁.Ideal)
+    (I₂Ideal : I₂.Ideal)
+  : (I₁ ∩ I₂).Ideal
+ := λ x₁ x₂ x₃ Ix Jx
+    , and.intro (I₁Ideal Ix.1 Jx) (I₂Ideal Ix.2 Jx)
 
 -- -- Intersections are commutative
 -- def IntersectionIdeal.comm {A : Alg.{ℓ}} {I₁ I₂ : A.Ideal}

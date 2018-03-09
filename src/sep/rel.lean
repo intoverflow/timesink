@@ -22,6 +22,9 @@ def Rel.WellDefined {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A�
       (R₂ : r x y₂)
     , y₁ = y₂
 
+def Rel.Total {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ x, ∃ y, r x y
+
 
 -- An equivalence relation on relations; happens to imply equality but is easier to prove
 def RelEq {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r₁ r₂ : Rel A₁ A₂) : Prop
@@ -204,23 +207,44 @@ def Rel.Im {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
  := λ y, ∃ x, r x y
 
 
+-- The proper domain of the function induced by a relation
+def Rel.Dom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Set A₁
+ := λ x, ∃ y, r x y
+
+def Rel.IdealDom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {x₁ x₂ x₃} (Dx₁ : x₁ ∈ r.Dom) (Jx : A₁.join x₁ x₂ x₃)
+    , x₃ ∈ r.Dom
+
+def Total.IdealDom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+  (rT : r.Total)
+  : r.IdealDom
+ := begin intros x₁ x₂ x₃ Dx₁ Jx, apply rT end
+
+def Rel.FnIdealDom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := r.Dom.Ideal
+
+def Rel.FnIdealDom_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : r.FnIdealDom ↔ r.IdealDom
+ := sorry
+
 -- The kernel of the function induced by a relation
-def Rel.Kern {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+def Rel.Ker {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : Set A₁
  := λ x, ∀ y, ¬ r x y
 
 
-def Rel.KernIdeal {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+def Rel.IdealKer {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {x₁ x₃}
     , A₁.Divides x₁ x₃
     → (∀ y₁, ¬ r x₁ y₁)
     → (∀ y₃, ¬ r x₃ y₃)
 
-def Rel.FnKernIdeal {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
-  := r.Kern.Ideal
+def Rel.FnIdealKer {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+  := r.Ker.Ideal
 
-def Rel.FnKernIdeal_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
-  : r.FnKernIdeal ↔ r.KernIdeal
+def Rel.FnIdealKerl_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : r.FnIdealKer ↔ r.IdealKer
  := begin
       apply iff.intro,
       { intro rLinear,
@@ -242,17 +266,17 @@ def Rel.FnKernIdeal_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A�
     end
 
 
-def Rel.KernPrime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+def Rel.PrimeKer {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {x₁ x₂ x₃}
     , A₁.join x₁ x₂ x₃
     → (∀ y₃, ¬ r x₃ y₃)
     → (∀ y₁, ¬ r x₁ y₁) ∨ (∀ y₂, ¬ r x₂ y₂)
 
-def Rel.FnKernPrime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
-  := r.Kern.Prime
+def Rel.FnPrimeKer {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+  := r.Ker.Prime
 
-def Rel.FnKernPrime_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
-  : r.FnKernPrime ↔ r.KernPrime
+def Rel.FnPrimeKer_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : r.FnPrimeKer ↔ r.PrimeKer
  := begin
       apply iff.intro,
       { intro rKP,
@@ -266,11 +290,20 @@ def Rel.FnKernPrime_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A�
     end
 
 
--- Preservation of ideals, multiplicative sets, prime sets, and division
-def Rel.FnMultSetPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
- := ∀ {S : Set A₁} (Smult : S.MultSet)
-    , (r.Fn S).MultSet
+-- Preservation of ideals, join-closed sets, prime sets, division, etc
+def Rel.FnComplSubAlgPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {S : Set A₂} (S_CSA : S.Compl.SubAlg)
+    , (r.FnInv S).Compl.SubAlg
 
+
+def Rel.FnJoinClosedPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {S : Set A₁} (SJC : S.JoinClosed)
+    , (r.Fn S).JoinClosed
+
+
+def Rel.FnWeakIdealPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+  := ∀ {I : Set A₂} (Iideal : I.WeakIdeal)
+     , (r.FnInv I).WeakIdeal
 
 def Rel.IdealPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
   := ∀ {x₁ x₂ x₃} {y₁}
@@ -380,9 +413,9 @@ def Rel.DivPres_r {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂
      → r x₃ y₃
      → ∃ y₁, r x₁ y₁ ∧ A₂.Divides y₁ y₃
 
-def DivPres_r.KernIdeal {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+def DivPres_r.IdealKer {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
     (rDP : r.DivPres_r)
-  : r.KernIdeal
+  : r.IdealKer
  := begin
       intros x₁ x₃ Dx₁x₃ Kx₁ y₃ Rx₃y₃,
       cases rDP @Dx₁x₃ Rx₃y₃ with y₁ Hy₁,
@@ -415,9 +448,9 @@ def Rel.DivPres_l {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂
      → r x₁ y₁
      → (r x₃ y₁) ∨ (∃ y₃, r x₃ y₃ ∧ A₂.Divides y₁ y₃)
 
-def DivPres_l.KernPrime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+def DivPres_l.PrimeKer {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
     (rDP : r.DivPres_l)
-  : r.KernPrime
+  : r.PrimeKer
  := begin
       intros x₁ x₃ x₃ Jx Kx₃,
       apply or.inl,
@@ -536,17 +569,17 @@ def DownClosed.QuasiClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (f : Rel 
         assumption
       end
 
-def DownClosed.MultSetPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+def DownClosed.JoinClosedPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
     (rDC : r.DownClosed)
-  : r.FnMultSetPres
+  : r.FnJoinClosedPres
  := begin
-      intros S Smult,
+      intros S SJC,
       intros b₁ b₂ b₃ Jb Sb₁ Sb₂,
       apply Rel.Fn.elim Sb₁, intros a₁ Sa₁ Ra₁b₁,
       apply Rel.Fn.elim Sb₂, intros a₂ Sa₂ Ra₂b₂,
       cases rDC Ra₁b₁ Ra₂b₂ Jb with a₃ Ha,
       cases Ha with Ra₃b₃ Ja,
-      have Sa₃ : a₃ ∈ S := Smult Ja Sa₁ Sa₂,
+      have Sa₃ : a₃ ∈ S := SJC _ _ _ Ja Sa₁ Sa₂,
       exact Rel.Fn.show _ Sa₃ Ra₃b₃
     end
 
@@ -558,14 +591,14 @@ def Rel.QuasiDownClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A�
      → A₁.join n₁ n₂ n₃
 
 def QuasiDownClosed.DownClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
-    (rIM : r.Im.MultSet)
+    (rIM : r.Im.JoinClosed)
     (rDC : r.QuasiDownClosed)
   : r.DownClosed
  := begin
       intros n₁ n₂ m₁ m₂ m₃ Rn₁m₁ Rn₂m₂ Jm,
       have Im₁ : m₁ ∈ r.Im := exists.intro n₁ Rn₁m₁,
       have Im₂ : m₂ ∈ r.Im := exists.intro n₂ Rn₂m₂,
-      cases rIM Jm Im₁ Im₂ with n₃ Rn₃m₃,
+      cases rIM _ _ _ Jm Im₁ Im₂ with n₃ Rn₃m₃,
       existsi n₃, apply and.intro Rn₃m₃,
       exact rDC Rn₁m₁ Rn₂m₂ Rn₃m₃ Jm
     end
@@ -620,6 +653,24 @@ def UpClosed.QuasiClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A�
         assumption
       end
 
+def UpClosed.IdealPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+  (rUC : r.UpClosed)
+  (rID : r.IdealDom)
+  (rWD : r.WellDefined)
+  : r.IdealPres
+ := begin
+      intros x₁ x₂ x₃ y₁ Jx Rx₁y₁,
+      have Dx₁ : x₁ ∈ r.Dom, from begin existsi y₁, assumption end,
+      cases rID Dx₁ Jx with y₃ Rx₃y₃,         -- Uses rID
+      have Q := rUC Jx Rx₃y₃,                 -- Uses rUC
+      cases Q with y₁' Q, cases Q with y₂' Q,
+      have E : y₁' = y₁ := rWD Q.2.1 Rx₁y₁,   -- Uses rWD
+      subst E,
+      apply or.inr,
+      existsi y₂', existsi y₃,
+      exact and.intro Rx₃y₃ Q.1
+    end
+
 def UpClosed.PrimePres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
   (rUC : r.UpClosed)
   : r.FnPrimePres
@@ -655,6 +706,15 @@ def UpClosed.DivPres_r {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁
       }
     end
 
+def UpClosed.IdealKer {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rUC : r.UpClosed)
+  : r.IdealKer
+ := begin
+      apply DivPres_r.IdealKer,
+      apply UpClosed.DivPres_r,
+      assumption
+    end
+
 def Rel.FnUpClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (f : Rel A₁ A₂) : Prop
   := ∀ (X₁ X₂ : Set A₁)
      , f.Fn (X₁ <*> X₂) ⊆ (f.Fn X₁ <*> f.Fn X₂)
@@ -687,17 +747,16 @@ def Rel.UpClosed_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (f : Rel A₁ A
 def Rel.QuasiUpClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {x₁ x₂ x₃} {y₃}
     , A₁.join x₁ x₂ x₃
-    → ¬ x₁ ∈ r.Kern → ¬ x₂ ∈ r.Kern → r x₃ y₃
+    → ¬ x₁ ∈ r.Ker → ¬ x₂ ∈ r.Ker → r x₃ y₃
     → ∃ y₁' y₂', A₂.join y₁' y₂' y₃ ∧ r x₁ y₁' ∧ r x₂ y₂'
 
 def Rel.UpClosed_iff' {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
-  : r.UpClosed ↔ r.KernIdeal ∧ r.QuasiUpClosed
+  : r.UpClosed ↔ r.IdealKer ∧ r.QuasiUpClosed
  := begin
       apply iff.intro,
       { intro rUC,
         apply and.intro,
-        { apply DivPres_r.KernIdeal,
-          apply UpClosed.DivPres_r,
+        { apply UpClosed.IdealKer,
           assumption
         },
         { intros x₁ x₂ x₃ y₃ Jx Kx₁ Kx₂ Rx₃y₃,
@@ -706,21 +765,20 @@ def Rel.UpClosed_iff' {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ 
       },
       { intro rH, cases rH with rKI rL,
         intros m₁ m₂ m₃ n₃ Jm Rn₃m₃,
-        have Km₁ : ¬ m₁ ∈ r.Kern, from
+        have Km₁ : ¬ m₁ ∈ r.Ker, from
           begin
             intro H,
-            have Q : m₃ ∈ r.Kern := rKI (λ P C₁ C₂, C₁ Jm) @H,
+            have Q : m₃ ∈ r.Ker := rKI (λ P C₁ C₂, C₁ Jm) @H,
             exact Q _ Rn₃m₃
           end,
-        have Km₂ : ¬ m₂ ∈ r.Kern, from
+        have Km₂ : ¬ m₂ ∈ r.Ker, from
           begin
             intro H,
-            have Q : m₃ ∈ r.Kern := rKI (λ P C₁ C₂, C₁ (A₁.comm Jm)) @H,
+            have Q : m₃ ∈ r.Ker := rKI (λ P C₁ C₂, C₁ (A₁.comm Jm)) @H,
             exact Q _ Rn₃m₃
           end,
         apply rL Jm Km₁ Km₂ Rn₃m₃
       }
     end
-
 
 end Sep
