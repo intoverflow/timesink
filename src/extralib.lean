@@ -3,6 +3,11 @@ namespace set
 
 universe ℓ
 
+#check sUnion
+
+def sInter {A : Type.{ℓ}} : set (set A) → set A
+ := λ X a, ∀ X₀ ∈ X, a ∈ X₀
+
 def in_append {A : Type.{ℓ}} {L₁ L₂ : list A}
   : ∀ {x}, x ∈ list.append L₁ L₂ → x ∈ L₁ ∨ x ∈ L₂
  := begin

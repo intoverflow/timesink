@@ -24,9 +24,38 @@ def PrimeSpec.eq {A : Alg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
       subst E
     end
 
--- In practice, we require S to be a finite set.
+def PrimePres.InducedMap {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
+    (rPP : r.PrimePres)
+  : Y.PrimeSpec → X.PrimeSpec
+ := λ p, { set := r.FnInv p.set
+         , prime := Rel.PrimePres_iff.2 @rPP p.prime
+         }
+
 def PrimeSpec.BasicOpen {A : Alg.{ℓ}} (S : Set A) : set A.PrimeSpec
   := λ p, ∀ {s}, ¬ s ∈ S ∩ p.set
+
+def PrimePres.InducedMap.BasicPreImage {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
+    (rPP : r.PrimePres)
+    (xs : Set X)
+  : PreImage (PrimePres.InducedMap @rPP) (PrimeSpec.BasicOpen xs)
+      = PrimeSpec.BasicOpen (r.Fn xs)
+ := begin
+      apply funext, intro p,
+      apply iff.to_eq, apply iff.intro,
+      { intros H y Hy,
+        apply Hy.1.elim,
+        intros x Hxxs Rxy,
+        refine H (and.intro Hxxs _),
+        existsi y,
+        exact and.intro Hy.2 Rxy
+      },
+      { intros H x Hx,
+        cases Hx.2 with y Hy,
+        refine H (and.intro _ Hy.1),
+        existsi x,
+        exact and.intro Hx.1 Hy.2
+      }
+    end
 
 def PrimeSpec.BasicOpen.intersection {A : Alg.{ℓ}} (S₁ S₂ : Set A)
   : PrimeSpec.BasicOpen S₁ ∩ PrimeSpec.BasicOpen S₂ = PrimeSpec.BasicOpen (S₁ ∪ S₂)
@@ -43,6 +72,98 @@ def PrimeSpec.BasicOpen.intersection {A : Alg.{ℓ}} (S₁ S₂ : Set A)
         { intros x Hx, exact H (and.intro (or.inr Hx.1) Hx.2) }
       }
     end
+
+def PrimeSpec.BasicOpen.intersection₀ {A : Alg.{ℓ}} (S : set (Set A))
+  : set.sInter (PrimeSpec.BasicOpen <$> S)
+      = PrimeSpec.BasicOpen (set.sUnion S)
+ := begin
+      apply funext, intro p,
+      apply iff.to_eq, apply iff.intro,
+      { intros H x Hx,
+        cases Hx.1 with T H,
+        cases H with HTS HxT,
+        refine H (PrimeSpec.BasicOpen T) _ (and.intro HxT Hx.2),
+        existsi T,
+        exact and.intro HTS rfl
+      },
+      { intros H O HO,
+        cases HO with T HO,
+        cases HO with HTS E,
+        have E' := E.symm, subst E', clear E,
+        intros x Hx,
+        refine H (and.intro _ Hx.2),
+        existsi T,
+        exact exists.intro HTS Hx.1
+      }
+    end
+
+def Alg.PrimeSpec.FineOpenBase (A : Alg.{ℓ}) : OpenBase A.PrimeSpec
+ := { Open := λ U, ∃ S, U = PrimeSpec.BasicOpen S
+    , Cover := begin
+                apply funext, intro p,
+                apply iff.to_eq,
+                apply iff.intro,
+                { intro T, clear T,
+                  existsi (λ x, true),
+                  apply exists.intro,
+                  { apply exists.intro ∅,
+                    apply funext, intro p',
+                    apply iff.to_eq,
+                    apply iff.intro,
+                    { intro T, clear T,
+                      intros x Hx,
+                      exact Hx.1
+                    },
+                    { intro H, constructor }
+                  },
+                  { constructor }
+                },
+                { intro H, constructor }
+               end
+    , Ointer := begin
+                  intros U₁ U₂ H₁ H₂,
+                  cases H₁ with L₁ E₁,
+                  cases H₂ with L₂ E₂,
+                  subst E₁, subst E₂,
+                  existsi L₁ ∪ L₂,
+                  apply funext, intro p,
+                  apply iff.to_eq,
+                  apply iff.intro,
+                  { intros H x Hx,
+                    cases Hx with Hx Hxp,
+                    cases Hx with Hx Hx,
+                    { exact H.1 (and.intro Hx Hxp) },
+                    { exact H.2 (and.intro Hx Hxp) }
+                  },
+                  { intro H,
+                    apply and.intro,
+                    { intros x Hx,
+                      exact H (and.intro (or.inl Hx.1) Hx.2)
+                    },
+                    { intros x Hx,
+                      exact H (and.intro (or.inr Hx.1) Hx.2)
+                    }
+                  }
+                end
+    }
+
+def Alg.PrimeSpec.FineTopology (A : Alg.{ℓ}) : Topology A.PrimeSpec
+  := (Alg.PrimeSpec.FineOpenBase A).Topology
+
+def PrimePres.InducedMap.FineContinuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
+    (rPP : r.PrimePres)
+  : Continuous (Alg.PrimeSpec.FineTopology Y) (Alg.PrimeSpec.FineTopology X)
+               (PrimePres.InducedMap @rPP)
+ := begin
+      apply OpenBase.Continuous,
+      intros U Uopen,
+      cases Uopen with xs E, subst E,
+      rw PrimePres.InducedMap.BasicPreImage,
+      apply OpenBase.BaseOpen,
+      existsi r.Fn xs,
+      trivial
+    end
+
 
 def Alg.PrimeSpec.OpenBase (A : Alg.{ℓ}) : OpenBase A.PrimeSpec
  := { Open := λ U, ∃ (xs : list A.τ), U = PrimeSpec.BasicOpen (λ x, x ∈ xs)
@@ -98,13 +219,6 @@ def Alg.PrimeSpec.OpenBase (A : Alg.{ℓ}) : OpenBase A.PrimeSpec
 
 def Alg.PrimeSpec.Topology (A : Alg.{ℓ}) : Topology A.PrimeSpec
   := (Alg.PrimeSpec.OpenBase A).Topology
-
-def PrimePres.InducedMap {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
-    (rPP : r.PrimePres)
-  : Y.PrimeSpec → X.PrimeSpec
- := λ p, { set := r.FnInv p.set
-         , prime := Rel.PrimePres_iff.2 @rPP p.prime
-         }
 
 def PrimePres.InducedMap.Continuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
     (rPP : r.PrimePres)

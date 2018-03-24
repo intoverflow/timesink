@@ -24,9 +24,78 @@ def JoinSpec.eq {A : Alg.{ℓ}} (J₁ J₂ : A.JoinSpec)
       subst E
     end
 
--- In practice, we require S to be a finite set.
+def JoinClosedPres.InducedMap {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
+    (rJP : r.FnJoinClosedPres)
+  : X.JoinSpec → Y.JoinSpec
+ := λ j, { set := r.Fn j.set
+         , join := rJP j.join
+         }
+
 def JoinSpec.BasicOpen {A : Alg.{ℓ}} (S : Set A) : set A.JoinSpec
   := λ j, S ⊆ j.set
+
+def JoinSpec.InducedMap.BasicPreImage' {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
+    (rJP : r.FnJoinClosedPres)
+    (ys : Set Y)
+  : PreImage (JoinClosedPres.InducedMap @rJP) (JoinSpec.BasicOpen ys)
+      = set.sUnion (λ U, ∃ S, ys ⊆ r.Fn S ∧ U = JoinSpec.BasicOpen S)
+ := begin
+      apply funext, intro J,
+      apply iff.to_eq, apply iff.intro,
+      { intro H,
+        existsi JoinSpec.BasicOpen J.set,
+        refine exists.intro _ _,
+        { existsi J.set, exact and.intro H rfl },
+        { intros x Hx, exact Hx }
+      },
+      { intros H y Hyys,
+        cases H with S H,
+        cases H with H HJ,
+        cases H with S H,
+        cases H with H E,
+        subst E,
+        apply (H Hyys).elim,
+        intros x Hx Rxy,
+        existsi x,
+        exact and.intro (HJ Hx) Rxy
+      }
+    end
+
+def JoinSpec.InducedMap.BasicPreImage {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
+    (rJP : r.FnJoinClosedPres)
+    (ys : Set Y)
+  : PreImage (JoinClosedPres.InducedMap @rJP) (JoinSpec.BasicOpen ys)
+      = set.sInter (λ U, ∃ y, y ∈ ys ∧ U = set.sUnion ((λ x, JoinSpec.BasicOpen (eq x)) <$> r.Fib y))
+ := begin
+      apply funext, intro J,
+      apply iff.to_eq, apply iff.intro,
+      { intros H O HO,
+        cases HO with y Hy,
+        cases Hy with Hyys E,
+        subst E,
+        cases H Hyys with x Hx,
+        existsi JoinSpec.BasicOpen (eq x),
+        refine exists.intro _ _,
+        { existsi x,
+          refine and.intro Hx.2 rfl,
+        },
+        { intros x' E,
+          have E' : x = x' := E, subst E', clear E,
+          exact Hx.1
+        }
+      },
+      { intros H y Hyys,
+        have Q := H (set.sUnion ((λ x, JoinSpec.BasicOpen (eq x)) <$> r.Fib y))
+                    begin existsi y, exact and.intro Hyys rfl end,
+        cases Q with X HX,
+        cases HX with HX JX,
+        cases HX with x HX,
+        cases HX with Rxy E,
+        have E' := E.symm, subst E', clear E,
+        existsi x,
+        exact and.intro (JX rfl) Rxy
+      }
+    end
 
 def JoinSpec.BasicOpen.intersection {A : Alg.{ℓ}} (S₁ S₂ : Set A)
   : JoinSpec.BasicOpen S₁ ∩ JoinSpec.BasicOpen S₂ = JoinSpec.BasicOpen (S₁ ∪ S₂)
@@ -99,13 +168,6 @@ def Alg.JoinSpec.OpenBase (A : Alg.{ℓ}) : OpenBase A.JoinSpec
 
 def Alg.JoinSpec.Topology (A : Alg.{ℓ}) : Topology A.JoinSpec
   := (Alg.JoinSpec.OpenBase A).Topology
-
-def JoinClosedPres.InducedMap {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
-    (rJP : r.FnJoinClosedPres)
-  : X.JoinSpec → Y.JoinSpec
- := λ j, { set := r.Fn j.set
-         , join := rJP j.join
-         }
 
 def JoinClosedPres.InducedMap.Continuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
     (rJP : r.FnJoinClosedPres)
