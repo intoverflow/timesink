@@ -47,6 +47,22 @@ def WholeSet (A : Alg.{ℓ}) : Set A := λ a, true
 def Set.Compl {A : Alg.{ℓ}} (S : Set A) : Set A
  := set.compl S
 
+def Set.ComplCompl {A : Alg.{ℓ}} (S : Set A)
+  : S.Compl.Compl = S
+ := begin
+      apply funext, intro s,
+      apply iff.to_eq,
+      apply iff.intro,
+      { intro H₁,
+        apply classical.by_contradiction,
+        intro H₂,
+        exact H₁ H₂
+      },
+      { intros H₁ H₂,
+        exact H₂ H₁
+      }
+    end
+
 def Set.mem_nonempty {A : Alg.{ℓ}} {S : Set A}
     {x} (H : x ∈ S)
   : S ≠ ∅
@@ -397,9 +413,16 @@ def JoinClosure.JoinClosed {A : Alg.{ℓ}} (S : Set A)
       exact JoinClosure.mul Jx Gx₁ Gx₂
     end
 
+def Alg.JoinClosure₁ (A : Alg.{ℓ}) (x : A.τ) : Set A
+ := JoinClosure (eq x)
+
+def JoinClosure₁.JoinClosed {A : Alg.{ℓ}} (x : A.τ)
+  : (A.JoinClosure₁ x).JoinClosed
+ := JoinClosure.JoinClosed _
+
 -- A set S is prime if:  a <*> b ∩ S ≠ ∅ implies a ∈ S or b ∈ S
 def Set.Prime {A : Alg.{ℓ}} (I : Set A) : Prop
- := ∀ {x₁ x₂ x₃}
+ := ∀ (x₁ x₂ x₃)
     , x₃ ∈ A.join x₁ x₂
     → x₃ ∈ I
     → x₁ ∈ I ∨ x₂ ∈ I
@@ -418,7 +441,7 @@ def PrimeIdeal.Full {A : Alg.{ℓ}} {p : Set A}
   : p.Full
  := begin
       intros x₁ x₂ x₃ Jx Px x₃' Jx',
-      cases pPrime Jx Px with H₁ H₂,
+      cases pPrime _ _ _ Jx Px with H₁ H₂,
       { exact pIdeal H₁ Jx' },
       { exact pIdeal H₂ (A.comm Jx') }
     end
@@ -430,20 +453,19 @@ def Set.Prime.Complement_JoinClosed {A : Alg.{ℓ}} {p : Set A}
  := begin
       intros x₁ x₂ x₃ Jx Px₁ Px₂,
       intro Px₃,
-      cases pPrime Jx Px₃ with Px₁' Px₂',
+      cases pPrime _ _ _ Jx Px₃ with Px₁' Px₂',
       { exact Px₁ Px₁' },
       { exact Px₂ Px₂' }
     end
 
--- Classically, the complement of a join-closed set is a prime set
+-- The complement of a join-closed set is a prime set
 def Set.JoinClosed.Complement_Prime {A : Alg.{ℓ}} {S : Set A}
-    (S_ExcludedMiddle : ∀ x, (x ∈ S) ∨ (¬ x ∈ S))
     (SJC : S.JoinClosed)
   : S.Compl.Prime
  := begin
       intros x₁ x₂ x₃ Jx Sx₃,
-      cases S_ExcludedMiddle x₁ with Sx₁ Sx₁,
-      { cases S_ExcludedMiddle x₂ with Sx₂ Sx₂,
+      cases classical.em (x₁ ∈ S) with Sx₁ Sx₁,
+      { cases classical.em (x₂ ∈ S) with Sx₂ Sx₂,
         { apply false.elim, apply Sx₃,
           exact SJC _ _ _ Jx Sx₁ Sx₂
         },

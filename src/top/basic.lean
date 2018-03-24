@@ -12,15 +12,25 @@ structure Topology (A : Type.{ℓ}) : Type.{ℓ}
     (Ounion : ∀ {O}, (O ⊆ Open) → Open (set.sUnion O))
 
 def PreImage {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
-  (f : A → B)
+    (f : A → B)
   : set B → set A
  := λ S a, f a ∈ S
 
 def Continuous {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
-  (TA : Topology A) (TB : Topology B)
-  (f : A → B)
+    (TA : Topology A) (TB : Topology B)
+    (f : A → B)
   : Prop
  := ∀ S, TB.Open S → TA.Open (PreImage f S)
+
+structure Homeomorphism {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    (TA : Topology A) (TB : Topology B)
+    (f : A → B)
+    (g : B → A)
+  : Prop
+ := (cont₁ : Continuous TA TB f)
+    (cont₂ : Continuous TB TA g)
+    (eq₁ : ∀ a, g (f a) = a)
+    (eq₂ : ∀ b, f (g b) = b)
 
 
 def PreImage.Intersection {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
@@ -170,6 +180,30 @@ def OpenBase.Topology {A : Type.{ℓ}} (Base : OpenBase A)
                     }
                   end
     }
+
+def OpenBase.BaseOpen {A : Type.{ℓ}} (TA : OpenBase A)
+    {U : set A}
+  : TA.Open U → TA.Topology.Open U
+ := begin
+      intro H,
+      existsi (eq U),
+      apply and.intro,
+      { intros W E,
+        have E' : U = W := E,
+        subst E', clear E,
+        exact H
+      },
+      { apply funext, intro a,
+        apply iff.to_eq, apply iff.intro,
+        { intro H, existsi U, existsi rfl, exact H },
+        { intro H,
+          cases H with U' H,
+          cases H with E H,
+          have E' : U = U' := E, subst E', clear E,
+          exact H
+        }
+      }
+    end
 
 def OpenBase.Continuous {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
   (TA : Topology A) (TB : OpenBase B)

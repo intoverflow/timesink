@@ -139,6 +139,31 @@ def Rel_comp.assoc {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {A₃ : Alg.{ℓ�
                   existsi x₃, exact and.intro H₂₃ H₃₄
                 end))
 
+
+-- The complement relation
+def Rel.Compl {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Rel A₁ A₂
+ := λ x y, ¬ r x y
+
+def Rel.Compl.Involutive {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : r.Compl.Compl = r
+ := begin
+      apply funext, intro x,
+      apply funext, intro y,
+      simp [Rel.Compl],
+      apply iff.to_eq,
+      apply iff.intro,
+      { intro H₁,
+        apply classical.by_contradiction,
+        intro H₂,
+        exact H₁ H₂
+      },
+      { intros H₁ H₂,
+        exact H₂ H₁
+      }
+    end
+
+
 -- The function induced by a relation
 def Rel.Fn {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (f : Rel A₁ A₂)
   : Set A₁ → Set A₂
@@ -206,6 +231,10 @@ def Rel.Im {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : Set A₂
  := λ y, ∃ x, r x y
 
+def Rel.FinIm {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Prop
+ := ∀ x, ∃ (ys : list A₂.τ), (∀ y, r x y ↔ y ∈ ys)
+
 
 -- The proper domain of the function induced by a relation
 def Rel.Dom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
@@ -226,7 +255,22 @@ def Rel.FnIdealDom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A�
 
 def Rel.FnIdealDom_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : r.FnIdealDom ↔ r.IdealDom
- := sorry
+ := begin
+      apply iff.intro,
+      { intro rID, exact @rID },
+      { intro rID, exact @rID }
+    end
+
+
+-- Fibers
+def Rel.Fib {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) (y : A₂.τ)
+  : Set A₁
+ := λ x, r x y
+
+def Rel.FinFib {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Prop
+ := ∀ (y : A₂.τ), ∃ (xs : list A₁.τ), (r.Fib y = λ x, x ∈ xs)
+
 
 -- The kernel of the function induced by a relation
 def Rel.Ker {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
@@ -281,7 +325,7 @@ def Rel.FnPrimeKer_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁
       apply iff.intro,
       { intro rKP,
         intros x₁ x₂ x₃ Jx Kx₃,
-        exact rKP Jx Kx₃
+        exact rKP _ _ _ Jx Kx₃
       },
       { intro rKP,
         intros x₁ x₂ x₃ Jx Kx₃,
@@ -371,14 +415,14 @@ def Rel.FnPrimePres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A�
   := ∀ {p : Set A₂} (pPrime : p.Prime)
      , (r.FnInv p).Prime
 
-def Rel.PrimePres_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+def Rel.PrimePres_iff {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
   : r.FnPrimePres ↔ r.PrimePres
  := begin
       apply iff.intro,
       { intro rPP,
         intros p pPrime x₁ x₂ x₃ y₃ Jx Rx₃y₃ Py₃,
         have Px₃ : x₃ ∈ r.FnInv p := Rel.FnInv.show Rx₃y₃ Py₃,
-        cases rPP @pPrime Jx Px₃ with H H,
+        cases rPP pPrime _ _ _ Jx Px₃ with H H,
         { apply Rel.FnInv.elim H,
           intros y₁ Py₁ Rx₁y₁,
           apply or.inl, existsi y₁,
@@ -681,7 +725,7 @@ def UpClosed.PrimePres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁
       intros y₃ Py₃ Rx₃y₃,
       cases rUC Jx Rx₃y₃ with n₁ Hn,
       cases Hn with n₂ Hn,
-      cases pPrime Hn.1 Py₃ with H H,
+      cases pPrime _ _ _ Hn.1 Py₃ with H H,
       { exact or.inl (Rel.FnInv.show Hn.2.1 H) },
       { exact or.inr (Rel.FnInv.show Hn.2.2 H) }
     end
