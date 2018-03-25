@@ -11,16 +11,57 @@ structure Topology (A : Type.{ℓ}) : Type.{ℓ}
     (Ointer : ∀ {O₁ O₂}, Open O₁ → Open O₂ → Open (O₁ ∩ O₂))
     (Ounion : ∀ {O}, (O ⊆ Open) → Open (set.sUnion O))
 
+def Topology.Closed {A : Type.{ℓ}} (TA : Topology A)
+  : set (set A)
+ := λ C, ∃ O, TA.Open O ∧ C = O.compl
+
+def Image {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    (f : A → B)
+  : set A → set B
+ := λ S b, ∃ a, b = f a
+
+def OpenMap {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    (TA : Topology A) (TB : Topology B)
+    (f : A → B)
+  : Prop
+ := ∀ S, TA.Open S → TB.Open (Image f S)
+
+def ClosedMap {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    (TA : Topology A) (TB : Topology B)
+    (f : A → B)
+  : Prop
+ := ∀ S, TA.Closed S → TB.Closed (Image f S)
+
 def PreImage {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (f : A → B)
   : set B → set A
  := λ S a, f a ∈ S
+
+def PreImage.Compl {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    {f : A → B}
+    (S : set B)
+  : PreImage f S.compl = (PreImage f S).compl
+ := rfl
 
 def Continuous {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (TA : Topology A) (TB : Topology B)
     (f : A → B)
   : Prop
  := ∀ S, TB.Open S → TA.Open (PreImage f S)
+
+def Continuous.Closed {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    {TA : Topology A} {TB : Topology B}
+    {f : A → B}
+    (fC : Continuous TA TB f)
+  : ∀ S, TB.Closed S → TA.Closed (PreImage f S)
+ := begin
+      intros C Cclosed,
+      cases Cclosed with O H,
+      cases H with Oopen E,
+      subst E,
+      existsi (PreImage f O),
+      exact and.intro (fC _ Oopen) (PreImage.Compl _)
+    end
 
 structure Homeomorphism {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (TA : Topology A) (TB : Topology B)

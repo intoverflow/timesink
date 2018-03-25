@@ -34,6 +34,41 @@ def PrimePres.InducedMap {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
 def PrimeSpec.BasicOpen {A : Alg.{ℓ}} (S : Set A) : set A.PrimeSpec
   := λ p, ∀ {s}, ¬ s ∈ S ∩ p.set
 
+-- def PrimePres.InducedMap.Image {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
+--     (rPP : r.PrimePres)
+--     (rJP : r.FnJoinClosedPres)
+--     (ys : Set Y)
+--   : Image (PrimePres.InducedMap @rPP) (PrimeSpec.BasicOpen ys).compl
+--       = set.sInter (λ U, ∃ y, y ∈ ys ∧ U = (PrimeSpec.BasicOpen (r.Fib y)).compl)
+--  := begin
+--       apply funext, intro p',
+--       apply iff.to_eq, apply iff.intro,
+--       { intros H,
+--         cases H with p E, subst E,
+--         exact sorry
+--       },
+--       { rename p' p,
+--         intro H,
+--         refine exists.intro {set := (r.Fn p.set.Compl).Compl, prime := _} _,
+--         { apply Set.JoinClosed.Complement_Prime,
+--           apply rJP,
+--           apply Set.Prime.Complement_JoinClosed,
+--           exact p.prime
+--         },
+--         { apply PrimeSpec.eq,
+--           apply funext, intro x,
+--           apply iff.to_eq, apply iff.intro,
+--           { intro Hxp,
+--             simp [PrimePres.InducedMap],
+--             apply classical.by_contradiction,
+--             intro F,
+--             apply H,
+            
+--           }
+--         }
+--       }
+--     end
+
 def PrimePres.InducedMap.BasicPreImage {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
     (rPP : r.PrimePres)
     (xs : Set X)

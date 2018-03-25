@@ -825,4 +825,170 @@ def Rel.UpClosed_iff' {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ 
       }
     end
 
+
+-- DownPrime and UpJoin
+
+def Rel.DownPrime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Set A₁
+ := λ x, ∃ x₂ y₁ y₂ y₃, r x y₁ ∧ r x₂ y₂ ∧ A₂.join y₁ y₂ y₃
+
+def Rel.PreDownPrime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Set A₂
+ := λ y, ∃ y₂ y₃ x₁ x₂, r x₁ y ∧ r x₂ y₂ ∧ A₂.join y y₂ y₃
+
+def PreDownPrime_DownPrime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+  : r.DownPrime = r.FnInv (GenPrime r.PreDownPrime)
+ := begin
+      apply funext, intro x₁,
+      apply iff.to_eq, apply iff.intro,
+      { intro H,
+        cases H with x₂ H,
+        cases H with y₁ H,
+        cases H with y₂ H,
+        cases H with y₃ H,
+        cases H with R₁ H,
+        cases H with R₂ Jy,
+        existsi y₁,
+        refine and.intro _ R₁,
+        existsi y₁,
+        refine and.intro _ _,
+        { intros P C₁ C₂, exact C₂ rfl },
+        existsi y₂, existsi y₃,
+        existsi x₁, existsi x₂,
+        apply and.intro R₁,
+        exact and.intro R₂ Jy
+      },
+      { intro H,
+        cases H with y₁ H,
+        cases H with H R₁,
+        cases H with y₁' H,
+        cases H with Dy₁y₁' H,
+        cases H with y₂ H,
+        cases H with y₃ H,
+        cases H with x₁' H,
+        cases H with x₂ H,
+        cases H with R₁' H,
+        cases H with R₂ Jy,
+        apply Dy₁y₁' ; clear Dy₁y₁',
+        { intros y₁'' Jy',
+          apply A₂.assoc (A₂.comm Jy') Jy,
+          intro a,
+          existsi x₂,
+          existsi y₁, existsi y₂, existsi a.x,
+          apply and.intro R₁,
+          apply and.intro R₂,
+          exact a.J₁
+        },
+        { intro E, subst E,
+          existsi x₂,
+          existsi y₁, existsi y₂, existsi y₃,
+          exact and.intro R₁ (and.intro R₂ Jy),
+        }
+      }
+    end
+
+def FnPrimePres.DownPrime.Prime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rPP : r.FnPrimePres)
+  : r.DownPrime.Prime
+ := begin
+      rw PreDownPrime_DownPrime,
+      apply rPP,
+      apply GenPrime.Prime
+    end
+
+def UpClosed.DownPrime.Prime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rUC : r.UpClosed)
+  : r.DownPrime.Prime
+ := begin
+      intros x₁ x₂ x₃ Jx Dx₃,
+      cases Dx₃ with x₃' Dx₃,
+      cases Dx₃ with y₁ Dx₃,
+      cases Dx₃ with y₂ Dx₃,
+      cases Dx₃ with y₃ Dx₃,
+      cases Dx₃ with Rx₃y₁ Dx₃,
+      cases Dx₃ with Rx₃y₂ Jx₃,
+      have Q := rUC Jx Rx₃y₁,
+      cases Q with y₁₁ Q,
+      cases Q with y₁₂ Q,
+      cases Q with Jy₁ Q,
+      apply or.inl,
+      existsi x₂,
+      existsi y₁₁, existsi y₁₂, existsi y₁,
+      apply and.intro Q.1,
+      exact and.intro Q.2 Jy₁
+    end
+
+
+def Rel.UpJoin {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Set A₂
+ := λ y, ∃ x₁ x₂ x, r x y ∧ A₁.join x₁ x₂ x
+
+def Rel.PreUpJoin {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : Set A₁
+ := λ x, ∃ x₁ x₂ y, r x y ∧ A₁.join x₁ x₂ x
+
+def PreUpJoin_UpJoin {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+  : r.UpJoin = r.Fn (JoinClosure r.PreUpJoin)
+ := begin
+      apply funext, intro y,
+      apply iff.to_eq, apply iff.intro,
+      { intro H,
+        cases H with x₁ H,
+        cases H with x₂ H,
+        cases H with x H,
+        cases H with R₃ Jx,
+        existsi x,
+        refine and.intro _ R₃,
+        apply JoinClosure.gen,
+        existsi x₁, existsi x₂, existsi y,
+        exact and.intro R₃ Jx
+      },
+      { intro H,
+        cases H with x H,
+        cases H with H R₃,
+        cases H with H H,
+        { cases H with x₁ H,
+          cases H with x₂ H,
+          cases H with y' H,
+          cases H with R₃' Jx,
+          existsi x₁, existsi x₂, existsi x,
+          exact and.intro R₃ Jx
+        },
+        { existsi x₁, existsi x₂, existsi x,
+          apply and.intro R₃,
+          assumption
+        }
+      }
+    end
+
+def FnJoinClosedPres.UpJoin.JoinClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rJP : r.FnJoinClosedPres)
+  : r.UpJoin.JoinClosed
+ := begin
+      rw PreUpJoin_UpJoin,
+      apply rJP,
+      apply JoinClosure.JoinClosed
+    end
+
+def DownClosed.UpJoin.JoinClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rDC : r.DownClosed)
+  : r.UpJoin.JoinClosed
+ := begin
+      intros y₁ y₂ y₃ Jy Uy₁ Uy₂,
+      cases Uy₁ with x₁₁ Uy₁,
+      cases Uy₁ with x₁₂ Uy₁,
+      cases Uy₁ with x₁₃ Uy₁,
+      cases Uy₁ with Rx₁₃y₁ Uy₁,
+      cases Uy₂ with x₂₁ Uy₂,
+      cases Uy₂ with x₂₂ Uy₂,
+      cases Uy₂ with x₂₃ Uy₂,
+      cases Uy₂ with Rx₂₃y₂ Uy₂,
+      have Q := rDC Rx₁₃y₁ Rx₂₃y₂ Jy,
+      cases Q with x₃₃ Q,
+      existsi x₁₃, existsi x₂₃, existsi x₃₃,
+      exact Q
+    end
+
+
+
 end Sep
