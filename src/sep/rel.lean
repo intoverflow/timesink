@@ -990,5 +990,11 @@ def DownClosed.UpJoin.JoinClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r 
     end
 
 
+def foo {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rDC : r.DownClosed)
+  : r.DownPrime ⊆ r.PreUpJoin
+ := begin
+      
+    end
 
 end Sep
