@@ -65,4 +65,17 @@ def Alg.Opt (A : Alg.{ℓ}) : Alg.{ℓ}
      , assoc := @Option.join.assoc _ _ A.assoc
      }
 
+def Alg.Opt.Ident (A : Alg.{ℓ})
+  : Alg.Ident A.Opt
+ := { one := option.none
+    , join_one_r
+       := begin intro x, constructor end
+    , join_one_uniq_r
+       := begin
+            intros x y H,
+            cases H,
+            repeat { trivial }
+          end
+    }
+
 end Sep

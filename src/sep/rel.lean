@@ -25,6 +25,8 @@ def Rel.WellDefined {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A�
 def Rel.Total {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ x, ∃ y, r x y
 
+def Rel.Surj {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ y, ∃ x, r x y
 
 -- An equivalence relation on relations; happens to imply equality but is easier to prove
 def RelEq {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r₁ r₂ : Rel A₁ A₂) : Prop
@@ -990,11 +992,217 @@ def DownClosed.UpJoin.JoinClosed {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r 
     end
 
 
-def foo {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
-    (rDC : r.DownClosed)
-  : r.DownPrime ⊆ r.PreUpJoin
+def UpJoin_PreDownPrime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rUC : r.UpClosed)
+  : r.UpJoin ⊆ JoinClosure r.PreDownPrime
  := begin
-      
+      intros y H,
+      cases H with x₁ H,
+      cases H with x₂ H,
+      cases H with x₃ H,
+      cases H with R₃ Jx,
+      have Q := rUC Jx R₃,
+      cases Q with y₁ Q,
+      cases Q with y₂ Q,
+      cases Q with Jy Q,
+      cases Q with R₁ R₂,
+      apply JoinClosure.mul Jy,
+      { apply JoinClosure.gen,
+        existsi y₂, existsi y,
+        existsi x₁, existsi x₂,
+        apply and.intro R₁,
+        exact and.intro R₂ Jy
+      },
+      { apply JoinClosure.gen,
+        existsi y₁, existsi y,
+        existsi x₂, existsi x₁,
+        apply and.intro R₂,
+        exact and.intro R₁ (A₂.comm Jy)
+      }
     end
+
+def DownClosed.DownPrime_PreUpJoin {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rDC : r.DownClosed)
+  : r.DownPrime ⊆ GenPrime r.PreUpJoin
+ := begin
+      intros x₁ H,
+      cases H with x₂ H,
+      cases H with y₁ H,
+      cases H with y₂ H,
+      cases H with y₃ H,
+      cases H with R₁ H,
+      cases H with R₂ Jy,
+      have Q := rDC R₁ R₂ Jy,
+      cases Q with x₃ Q,
+      existsi x₃,
+      apply and.intro,
+      { intros P C₁ C₂, exact C₁ Q.2 },
+      { existsi x₁, existsi x₂, existsi y₃, exact Q }
+    end
+
+def UpClosed.DownPrime_PreUpJoin {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    {x x₂' x₃'}
+    (Jx' : A₁.join x x₂' x₃')
+    (H : x₃' ∈ r.PreUpJoin)
+  : x ∈ r.DownPrime
+ := begin
+      cases H with x₃ H,
+      cases H with x₁ H,
+      cases H with y H,
+      cases H with R₃ Jx,
+      have Q := rUC Jx' R₃,
+      cases Q with y₁ Q,
+      cases Q with y₂ Q,
+      cases Q with Jy Q,
+      cases Q with R₁ R₂,
+      existsi x₂',
+      existsi y₁, existsi y₂, existsi y,
+      apply and.intro R₁,
+      exact and.intro R₂ Jy
+    end
+
+def Flat.DownPrime_PreUpJoin {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    (rDC : r.DownClosed)
+  : r.DownPrime ∪ r.PreUpJoin = GenPrime r.PreUpJoin
+ := begin
+      apply funext, intro x,
+      apply iff.to_eq, apply iff.intro,
+      { intro H, cases H with H H,
+        { exact DownClosed.DownPrime_PreUpJoin @rDC H },
+        { exact GenPrime.mem _ H }
+      },
+      { intro H, cases H with x' H,
+        cases H with Dxx' H,
+        apply Dxx',
+        { intros x₀ Jx',
+          exact or.inl (UpClosed.DownPrime_PreUpJoin @rUC Jx' H)
+        },
+        { intro E, subst E, exact or.inr H }
+      }
+    end
+
+def Flat.DownPrime_PreUpJoin.Prime {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    (rDC : r.DownClosed)
+  : (r.DownPrime ∪ r.PreUpJoin).Prime
+ := begin
+      rw Flat.DownPrime_PreUpJoin @rUC @rDC,
+      apply GenPrime.Prime
+    end
+
+
+def Rel.WeakUnitPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ x, A₁.Unit x → ∃ y, r x y ∧ A₂.Unit y
+
+def UpClosed.AlmostUnitPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+    (rUC : r.UpClosed)
+    (H : ∃ x y, r x y ∧ A₁.Unit x ∧ A₂.Unit y)
+  : r.WeakUnitPres
+ := begin
+      intros x Hx,
+      cases H with x₀ H,
+      cases H with y₀ H,
+      cases H with R₀ H,
+      cases H with Hx₀ Hy₀,
+      apply Hx x₀,
+      { intros x' Jx,
+        have Q := rUC Jx R₀,
+        cases Q with y Q,
+        cases Q with y' Q,
+        cases Q with Jy Q,
+        existsi y,
+        apply and.intro Q.1,
+        have Dyy₀ : A₂.Divides y y₀ := λ P C₁ C₂, C₁ Jy,
+        exact Unit.Divides Hy₀ _ Dyy₀
+      },
+      { intro E, subst E,
+        existsi y₀,
+        exact and.intro R₀ Hy₀
+      }
+    end
+
+
+def Rel.UpUnitPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := r.Fn A₁.Unit ⊆ A₂.Unit
+
+def Rel.IntegralPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {I : Set A₂} (Iintegral : I.Integral)
+    , (r.FnInv I).Integral
+
+def UnitPres.IntegralPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A₁ A₂}
+  : r.UpUnitPres ↔ r.IntegralPres
+ := begin
+      apply iff.intro,
+      { intro Hr,
+        intros I Iintegral,
+        intros x Hy Hx,
+        cases Hy with y Hy,
+        cases Hy with Iy Rxy,
+        apply Iintegral y Iy,
+        apply Hr,
+        existsi x,
+        exact and.intro Hx Rxy
+      },
+      { intro Hr,
+        intros y H,
+        cases H with x H,
+        cases H with Hx Rxy,
+        apply @classical.by_contradiction (y ∈ A₂.Unit),
+        intro F,
+        have Q : @Set.Integral A₂ (eq y), from
+          begin
+            intros y' Hy',
+            have E : y = y' := Hy', subst E,
+            exact F
+          end,
+        have Q' := Hr Q,
+        have Q'' : x ∈ Rel.FnInv r (eq y), from
+          begin
+            existsi y,
+            exact and.intro rfl Rxy
+          end,
+        exact Q' x Q'' Hx
+      }
+    end
+      
+
+def Rel.DownUnitPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := A₂.Unit ⊆ r.Fn A₁.Unit
+
+def Rel.RationalPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {R : Set A₁} (Rrational : R.Rational)
+    , (r.Fn R).Rational
+
+def UnitPres.RationalPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : r.DownUnitPres ↔ r.RationalPres
+ := begin
+      apply iff.intro,
+      { intro Hr,
+        intros R Rrational,
+        intros x Ux,
+        cases Hr Ux with y Hy,
+        existsi y,
+        refine and.intro _ Hy.2,
+        exact Rrational Hy.1
+      },
+      { intro Hr,
+        intros y Hy,
+        exact Hr (Unit.Rational _) Hy
+      }
+    end
+
+
+def Rel.WeakIdPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ x y, r x y → A₁.WeakIdentity x → A₂.WeakIdentity y
+
+def Rel.FnGenPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {p : Set A₁} (pNG : p.Generating)
+    , (r.Fn p).Generating
+
+def Rel.FnNonGenPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
+ := ∀ {p : Set A₂} (pNG : p.NonGenerating)
+    , (r.FnInv p).NonGenerating
 
 end Sep

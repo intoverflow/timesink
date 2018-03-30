@@ -38,11 +38,29 @@ instance Set_has_inter (A : Alg.{ℓ}) : has_inter (Set A) := set.has_inter
 instance Set_has_union (A : Alg.{ℓ}) : has_union (Set A) := set.has_union
 instance Set_has_mem (A : Alg.{ℓ}) : has_mem A.τ (Set A) := set.has_mem
 
+def Set.Cover.Subset {A : Alg.{ℓ}}
+    {S : Set A} {SS : set (Set A)}
+    (Scover : S = set.sUnion SS)
+    {T : Set A} (SST : T ∈ SS)
+  : T ⊆ S
+ := begin
+      intros x H,
+      rw Scover,
+      existsi T,
+      exact exists.intro SST H
+    end
+
+def Set.Subset.trans {A : Alg.{ℓ}}
+    {S₁ S₂ S₃ : Set A}
+    (H₁₂ : S₁ ⊆ S₂) (H₂₃ : S₂ ⊆ S₃)
+  : S₁ ⊆ S₃
+ := λ s H, H₂₃ (H₁₂ H)
+
 def Set.nonempty {A : Alg.{ℓ}} (S : Set A) : Prop
  := ∃ x, x ∈ S
 
-def EmptySet (A : Alg.{ℓ}) : Set A := λ a, false
-def WholeSet (A : Alg.{ℓ}) : Set A := λ a, true
+def Alg.EmptySet (A : Alg.{ℓ}) : Set A := λ a, false
+def Alg.WholeSet (A : Alg.{ℓ}) : Set A := λ a, true
 
 def Set.Compl {A : Alg.{ℓ}} (S : Set A) : Set A
  := set.compl S
@@ -225,11 +243,73 @@ def Divides.refl (A : Alg.{ℓ}) (x : A.τ)
 
 
 
+/- Parts
+ -
+ -/
+def Alg.Part (A : Alg.{ℓ}) (m : A.τ) : Prop
+ := ∃ m₂ m₃, A.join m m₂ m₃
+
+
+
 /- Units
  -
  -/
-def Alg.Unit (A : Alg.{ℓ}) (u : A.τ) : Prop
- := ∀ x, A.Divides u x
+def Alg.Unit (A : Alg.{ℓ}) : Set A
+ := λ u, ∀ x, A.Divides u x
+
+def Alg.ProperUnit (A : Alg.{ℓ}) : Set A
+ := λ u, ∀ x, ∃ xu, A.join u xu x
+
+def ProperUnit.Unit {A : Alg.{ℓ}} {u : A.τ}
+    (uU : u ∈ A.ProperUnit)
+  : u ∈ A.Unit
+ := begin
+      intro x,
+      cases uU x with xu Hxu,
+      intros P C₁ C₂,
+      exact C₁ Hxu
+    end
+
+def Alg.StrongUnit (A : Alg.{ℓ}) : Set A
+ := λ u, u ∈ A.Unit ∧ (∀ v, v ∈ A.Unit → A.join u v ⊆ A.Unit)
+
+-- If w divides a proper unit, then w is also a unit
+def ProperUnit.Divides {A : Alg.{ℓ}} {u}
+    (uUnit : A.ProperUnit u)
+    (v : A.τ)
+  : A.Divides v u → A.ProperUnit v
+ := begin
+      intro H,
+      intro x,
+      apply H; clear H,
+      { intros w Jvwu,
+        cases uUnit x with xu Ju,
+        apply A.assoc Jvwu Ju,
+        intro a,
+        existsi a.x,
+        exact a.J₂
+      },
+      { intro E, subst E,
+        exact uUnit x
+      }
+    end
+
+-- Proper units join with each other to form new proper units
+def ProperUnit.Join {A : Alg.{ℓ}}
+    {u₁} (Uu₁ : A.ProperUnit u₁)
+    {u₂} (Uu₂ : A.ProperUnit u₂)
+  : ∃ u₃, u₃ ∈ A.join u₁ u₂ ∧ A.ProperUnit u₃
+ := begin
+      cases Uu₁ u₂ with w Jw,
+      cases Uu₂ w with v Jv,
+      apply A.assoc (A.comm Jv) (A.comm Jw),
+      intro a,
+      existsi a.x,
+      apply and.intro (A.comm a.J₁),
+      apply ProperUnit.Divides Uu₂,
+      intros P C₁ C₂,
+      exact C₁ (A.comm a.J₂)
+    end
 
 -- If w divides a unit, then w is also a unit
 def Unit.Divides {A : Alg.{ℓ}} {u} (uUnit : A.Unit u) (v : A.τ)
@@ -265,6 +345,18 @@ def Unit.Join {A : Alg.{ℓ}}
       },
       { exact E }
     end
+
+-- A set is Rational if it contains all of the units.
+def Set.Rational {A : Alg.{ℓ}} (R : Set A) : Prop
+ := A.Unit ⊆ R
+
+def Unit.Rational (A : Alg.{ℓ})
+  : A.Unit.Rational
+ := begin intros x Hx, exact Hx end
+
+-- A set is Integral if it contains no units.
+def Set.Integral {A : Alg.{ℓ}} (I : Set A) : Prop
+ := ∀ x, x ∈ I → ¬ A.Unit x
 
 def Alg.WeakIdentity (A : Alg.{ℓ}) (w : A.τ) : Prop
  := ∀ (x), A.join w x x
@@ -420,12 +512,81 @@ def JoinClosure₁.JoinClosed {A : Alg.{ℓ}} (x : A.τ)
   : (A.JoinClosure₁ x).JoinClosed
  := JoinClosure.JoinClosed _
 
+
 -- A set S is prime if:  a <*> b ∩ S ≠ ∅ implies a ∈ S or b ∈ S
 def Set.Prime {A : Alg.{ℓ}} (I : Set A) : Prop
  := ∀ (x₁ x₂ x₃)
     , x₃ ∈ A.join x₁ x₂
     → x₃ ∈ I
     → x₁ ∈ I ∨ x₂ ∈ I
+
+def Set.StrongPrime {A : Alg.{ℓ}} (I : Set A) : Prop
+ := ∀ (x₁ x₂ x₃)
+    , x₃ ∈ A.join x₁ x₂
+    → x₃ ∈ I
+    → x₁ ∈ I ∧ x₂ ∈ I
+
+def Set.StrongPrime.Prime {A : Alg.{ℓ}} {I : Set A}
+    (ISP : I.StrongPrime)
+  : I.Prime
+ := begin
+      intros x₁ x₂ x₃ Jx Ix₃,
+      exact or.inl (ISP _ _ _ Jx Ix₃).1
+    end
+
+-- Arbitrary unions of primes are again prime
+def Prime.Union {A : Alg.{ℓ}}
+    (PP : set (Set A))
+    (H : ∀ (p : Set A), p ∈ PP → p.Prime)
+  : Set.Prime (set.sUnion PP)
+ := begin
+      intros x₁ x₂ x₃ Jx H,
+      cases H with p H,
+      cases H with pPrime' px₃,
+      have pPrime : Set.Prime p := H p pPrime',
+      have Q := pPrime _ _ _ Jx px₃,
+      cases Q with Q Q,
+      { apply or.inl,
+        existsi p,
+        exact exists.intro pPrime' Q
+      },
+      { apply or.inr,
+        existsi p,
+        exact exists.intro pPrime' Q
+      }
+    end
+
+-- The set of units is prime
+def Alg.Unit.Prime (A : Alg.{ℓ})
+  : A.Unit.Prime
+ := begin
+      intros x₁ x₂ x₃ Jx Hx₃,
+      apply or.inl,
+      have Dx : A.Divides x₁ x₃ := λ P C₁ C₂, C₁ Jx,
+      exact Unit.Divides Hx₃ _ Dx
+    end
+
+-- The set of proper units is prime
+def Alg.ProperUnit.StrongPrime (A : Alg.{ℓ})
+    : A.ProperUnit.StrongPrime
+ := begin
+      intros x₁ x₂ u Jx Hu,
+      apply and.intro,
+      { intro x,
+        cases Hu x with xu Ju,
+        apply A.assoc Jx Ju,
+        intro a,
+        existsi a.x,
+        exact a.J₂
+      },
+      { intro x,
+        cases Hu x with xu Ju,
+        apply A.assoc (A.comm Jx) Ju,
+        intro a,
+        existsi a.x,
+        exact a.J₂
+      }
+    end
 
 -- A set S is full if:  a <*> b ∩ S ≠ ∅ implies a <*> b ⊆ S
 def Set.Full {A : Alg.{ℓ}} (p : Set A) : Prop
@@ -475,31 +636,31 @@ def Set.JoinClosed.Complement_Prime {A : Alg.{ℓ}} {S : Set A}
     end
 
 -- The whole set is an ideal
-def WholeIdeal (A : Alg.{ℓ}) : (WholeSet A).Ideal
+def WholeIdeal (A : Alg.{ℓ}) : (A.WholeSet).Ideal
  := λ x₁ x₂ x₃ Ix₁ H, Ix₁
 
 -- The whole set is join-closed
-def WholeJoinClosed (A : Alg.{ℓ}) : (WholeSet A).JoinClosed
+def WholeJoinClosed (A : Alg.{ℓ}) : (A.WholeSet).JoinClosed
  := λ x₁ x₂ x₃ Jx H₁ H₂, true.intro
 
 -- The whole set is a prime set
-def WholePrime (A : Alg.{ℓ}) : (WholeSet A).Prime
+def WholePrime (A : Alg.{ℓ}) : (A.WholeSet).Prime
  := λ x₁ x₂ x₃ Jx H, or.inl true.intro
 
 -- The empty set is an ideal
-def EmptyIdeal (A : Alg.{ℓ}) : (EmptySet A).Ideal
+def EmptyIdeal (A : Alg.{ℓ}) : (A.EmptySet).Ideal
  := λ x₁ x₂ x₃ Ix₁ H, Ix₁
 
 -- In a separation algebra with identity, the empty set is a proper set
-def EmptyProper.Proper {A : Alg.{ℓ}} (A₁ : A.Ident) : (EmptySet A).Proper
+def EmptyProper.Proper {A : Alg.{ℓ}} (A₁ : A.Ident) : (A.EmptySet).Proper
  := λ P C, C A₁.one false.elim
 
 -- The empty set is join-closed
-def EmptyJoinClosed (A : Alg.{ℓ}) : (EmptySet A).JoinClosed
+def EmptyJoinClosed (A : Alg.{ℓ}) : (A.EmptySet).JoinClosed
  := λ x₁ x₂ x₃ Jx H₁ H₂, false.elim H₁
 
 -- The empty set is a prime set
-def EmptyPrime (A : Alg.{ℓ}) : (EmptySet A).Prime
+def EmptyPrime (A : Alg.{ℓ}) : (A.EmptySet).Prime
  := λ x₁ x₂ x₃ H, false.elim
 
 -- Ideal generated by a set of elements
@@ -559,6 +720,37 @@ def GenIdeal₁.mem {A : Alg.{ℓ}} (x : A.τ)
   : x ∈ (A.GenIdeal₁ x)
 := GenIdeal.mem (eq x) rfl
 
+
+-- Generating sets
+def Set.Generating {A : Alg.{ℓ}} (G : Set A) : Prop
+ := ∀ x, ∃ g, A.Divides g x ∧ g ∈ G
+
+def Set.NonGenerating {A : Alg.{ℓ}} (G : Set A) : Prop
+ := ∃ x, ∀ g, ¬ (A.Divides g x ∧ g ∈ G)
+
+def NonGenerating_iff {A : Alg.{ℓ}} (G : Set A)
+  : G.NonGenerating ↔ ¬ G.Generating
+ := begin
+      apply iff.intro,
+      { intros HG F,
+        cases HG with x Hx,
+        cases F x with g Hg,
+        exact Hx g Hg
+      },
+      { intros HG,
+        simp [Set.Generating, Set.NonGenerating] at *,
+        apply classical.by_contradiction, intro F,
+        apply HG,
+        intro x,
+        apply classical.by_contradiction, intro F',
+        apply F,
+        existsi x,
+        intros g Hg,
+        apply F',
+        existsi g,
+        exact Hg
+      }
+    end
 
 -- Prime set generated by a set of elements
 def GenPrime {A : Alg.{ℓ}} (gen : Set A) : Set A
@@ -626,7 +818,6 @@ def GenPrime₁.nonempty {A : Alg.{ℓ}} (x : A.τ)
 def GenPrime₁.mem {A : Alg.{ℓ}} (x : A.τ)
   : x ∈ (A.GenPrime₁ x)
 := GenPrime.mem (eq x) rfl
-
 
 
 /- Operations on ideals

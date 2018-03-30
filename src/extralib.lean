@@ -3,8 +3,6 @@ namespace set
 
 universe ℓ
 
-#check sUnion
-
 def sInter {A : Type.{ℓ}} : set (set A) → set A
  := λ X a, ∀ X₀ ∈ X, a ∈ X₀
 
@@ -48,4 +46,41 @@ def in_append_right {A : Type.{ℓ}} {L₁ L₂ : list A}
     end
 
 end set
+
+
+namespace quotient
+
+universes u₁ u₂ u₃ u₄
+
+def lift₃ {α : Sort u₁} {β : Sort u₂} {γ : Sort u₃} {φ : Sort u₄}
+    [s₁ : setoid α] [s₂ : setoid β] [s₃ : setoid γ]
+    (f : α → β → γ → φ)
+    (c : ∀ a₁ a₂ a₃ b₁ b₂ b₃
+         , a₁ ≈ b₁ → a₂ ≈ b₂ → a₃ ≈ b₃
+         → f a₁ a₂ a₃ = f b₁ b₂ b₃)
+    (q₁ : quotient s₁) (q₂ : quotient s₂) (q₃ : quotient s₃)
+  : φ
+ := quotient.lift
+      (λ (a₁ : α)
+        , quotient.lift
+            (λ (a₂ : β)
+              , quotient.lift
+                  (f a₁ a₂)
+                  (λ (a b : γ), c a₁ a₂ a a₁ a₂ b (setoid.refl _) (setoid.refl _))
+                  q₃)
+            (λ (a b : β) (h : a ≈ b)
+              , quotient.ind
+                  (λ (a' : γ), c a₁ a a' a₁ b a' (setoid.refl _) h (setoid.refl _))
+                q₃)
+            q₂)
+      (λ (a b : α) (h : a ≈ b)
+        , quotient.ind
+            (λ (a' : β)
+              , quotient.ind
+                  (λ (a'' : γ), c a a' a'' b a' a'' h (setoid.refl _) (setoid.refl _))
+                  q₃)
+            q₂)
+      q₁
+
+end quotient
 

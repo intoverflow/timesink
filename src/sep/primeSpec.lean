@@ -13,6 +13,7 @@ open Top
 structure Alg.PrimeSpec (A : Alg.{ℓ}) : Type.{ℓ}
  := (set : Set A)
     (prime : set.Prime)
+    (integral : set.Integral)
 
 def PrimeSpec.eq {A : Alg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
   : p₁.set = p₂.set → p₁ = p₂
@@ -26,53 +27,21 @@ def PrimeSpec.eq {A : Alg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
 
 def PrimePres.InducedMap {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
     (rPP : r.PrimePres)
+    (rI : r.IntegralPres)
   : Y.PrimeSpec → X.PrimeSpec
  := λ p, { set := r.FnInv p.set
          , prime := Rel.PrimePres_iff.2 @rPP p.prime
+         , integral := rI p.integral
          }
 
 def PrimeSpec.BasicOpen {A : Alg.{ℓ}} (S : Set A) : set A.PrimeSpec
   := λ p, ∀ {s}, ¬ s ∈ S ∩ p.set
 
--- def PrimePres.InducedMap.Image {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
---     (rPP : r.PrimePres)
---     (rJP : r.FnJoinClosedPres)
---     (ys : Set Y)
---   : Image (PrimePres.InducedMap @rPP) (PrimeSpec.BasicOpen ys).compl
---       = set.sInter (λ U, ∃ y, y ∈ ys ∧ U = (PrimeSpec.BasicOpen (r.Fib y)).compl)
---  := begin
---       apply funext, intro p',
---       apply iff.to_eq, apply iff.intro,
---       { intros H,
---         cases H with p E, subst E,
---         exact sorry
---       },
---       { rename p' p,
---         intro H,
---         refine exists.intro {set := (r.Fn p.set.Compl).Compl, prime := _} _,
---         { apply Set.JoinClosed.Complement_Prime,
---           apply rJP,
---           apply Set.Prime.Complement_JoinClosed,
---           exact p.prime
---         },
---         { apply PrimeSpec.eq,
---           apply funext, intro x,
---           apply iff.to_eq, apply iff.intro,
---           { intro Hxp,
---             simp [PrimePres.InducedMap],
---             apply classical.by_contradiction,
---             intro F,
---             apply H,
-            
---           }
---         }
---       }
---     end
-
 def PrimePres.InducedMap.BasicPreImage {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
     (rPP : r.PrimePres)
+    (rI : r.IntegralPres)
     (xs : Set X)
-  : PreImage (PrimePres.InducedMap @rPP) (PrimeSpec.BasicOpen xs)
+  : PreImage (PrimePres.InducedMap @rPP @rI) (PrimeSpec.BasicOpen xs)
       = PrimeSpec.BasicOpen (r.Fn xs)
  := begin
       apply funext, intro p,
@@ -132,8 +101,9 @@ def PrimeSpec.BasicOpen.intersection₀ {A : Alg.{ℓ}} (S : set (Set A))
       }
     end
 
-def Alg.PrimeSpec.FineOpenBase (A : Alg.{ℓ}) : OpenBase A.PrimeSpec
- := { Open := λ U, ∃ S, U = PrimeSpec.BasicOpen S
+def Alg.PrimeSpec.OpenBasis (A : Alg.{ℓ}) : OpenBasis A.PrimeSpec
+ := { OI := Set A
+    , Open := PrimeSpec.BasicOpen
     , Cover := begin
                 apply funext, intro p,
                 apply iff.to_eq,
@@ -155,21 +125,11 @@ def Alg.PrimeSpec.FineOpenBase (A : Alg.{ℓ}) : OpenBase A.PrimeSpec
                 },
                 { intro H, constructor }
                end
+    , inter := λ S₁ S₂, S₁ ∪ S₂
     , Ointer := begin
-                  intros U₁ U₂ H₁ H₂,
-                  cases H₁ with L₁ E₁,
-                  cases H₂ with L₂ E₂,
-                  subst E₁, subst E₂,
-                  existsi L₁ ∪ L₂,
+                  intros U₁ U₂,
                   apply funext, intro p,
-                  apply iff.to_eq,
-                  apply iff.intro,
-                  { intros H x Hx,
-                    cases Hx with Hx Hxp,
-                    cases Hx with Hx Hx,
-                    { exact H.1 (and.intro Hx Hxp) },
-                    { exact H.2 (and.intro Hx Hxp) }
-                  },
+                  apply iff.to_eq, apply iff.intro,
                   { intro H,
                     apply and.intro,
                     { intros x Hx,
@@ -178,164 +138,198 @@ def Alg.PrimeSpec.FineOpenBase (A : Alg.{ℓ}) : OpenBase A.PrimeSpec
                     { intros x Hx,
                       exact H (and.intro (or.inr Hx.1) Hx.2)
                     }
-                  }
-                end
-    }
-
-def Alg.PrimeSpec.FineTopology (A : Alg.{ℓ}) : Topology A.PrimeSpec
-  := (Alg.PrimeSpec.FineOpenBase A).Topology
-
-def PrimePres.InducedMap.FineContinuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
-    (rPP : r.PrimePres)
-  : Continuous (Alg.PrimeSpec.FineTopology Y) (Alg.PrimeSpec.FineTopology X)
-               (PrimePres.InducedMap @rPP)
- := begin
-      apply OpenBase.Continuous,
-      intros U Uopen,
-      cases Uopen with xs E, subst E,
-      rw PrimePres.InducedMap.BasicPreImage,
-      apply OpenBase.BaseOpen,
-      existsi r.Fn xs,
-      trivial
-    end
-
-
-def Alg.PrimeSpec.OpenBase (A : Alg.{ℓ}) : OpenBase A.PrimeSpec
- := { Open := λ U, ∃ (xs : list A.τ), U = PrimeSpec.BasicOpen (λ x, x ∈ xs)
-    , Cover := begin
-                apply funext, intro p,
-                apply iff.to_eq,
-                apply iff.intro,
-                { intro T, clear T,
-                  existsi (λ x, true),
-                  apply exists.intro,
-                  { existsi list.nil,
-                    apply funext, intro p',
-                    apply iff.to_eq,
-                    apply iff.intro,
-                    { intro T, clear T,
-                      intros x Hx,
-                      exact Hx.1
-                    },
-                    { intro H, constructor }
-                  },
-                  { constructor }
-                },
-                { intro H, constructor }
-               end
-    , Ointer := begin
-                  intros U₁ U₂ H₁ H₂,
-                  cases H₁ with L₁ E₁,
-                  cases H₂ with L₂ E₂,
-                  subst E₁, subst E₂,
-                  existsi list.append L₁ L₂,
-                  apply funext, intro p,
-                  apply iff.to_eq,
-                  apply iff.intro,
-                  { intros H x Hx,
-                    have Qx : x ∈ L₁ ∨ x ∈ L₂, from set.in_append Hx.1,
-                    cases Qx with Qx Qx,
-                    { exact H.1 (and.intro Qx Hx.2) },
-                    { exact H.2 (and.intro Qx Hx.2) }
                   },
                   { intro H,
-                    apply and.intro,
-                    { intros x Hx,
-                      have Qx : x ∈ list.append L₁ L₂, from set.in_append_left Hx.1,
-                      exact H (and.intro Qx Hx.2)
-                    },
-                    { intros x Hx,
-                      have Qx : x ∈ list.append L₁ L₂, from set.in_append_right Hx.1,
-                      exact H (and.intro Qx Hx.2)
-                    }
+                    cases H with H₁ H₂,
+                    intros x Hx,
+                    cases Hx with Hx Hxp,
+                    cases Hx with Hx Hx,
+                    { exact H₁ (and.intro Hx Hxp) },
+                    { exact H₂ (and.intro Hx Hxp) }
                   }
                 end
     }
 
 def Alg.PrimeSpec.Topology (A : Alg.{ℓ}) : Topology A.PrimeSpec
-  := (Alg.PrimeSpec.OpenBase A).Topology
+  := (Alg.PrimeSpec.OpenBasis A).Topology
 
 def PrimePres.InducedMap.Continuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
     (rPP : r.PrimePres)
-    (rFI : r.FinIm)
+    (rI : r.IntegralPres)
   : Continuous (Alg.PrimeSpec.Topology Y) (Alg.PrimeSpec.Topology X)
-               (PrimePres.InducedMap @rPP)
+               (PrimePres.InducedMap @rPP @rI)
  := begin
-      apply OpenBase.Continuous,
-      intros U Uopen,
-      cases Uopen with xs E, subst E,
-      have Q : ∃ (ys : list Y.τ)
-               , (∀ {y}, y ∈ ys → ∃ x, x ∈ xs ∧ r x y)
-               ∧ (∀ {x y}, x ∈ xs ∧ r x y → y ∈ ys)
-             , from begin
-                      induction xs with x xs,
-                      { existsi list.nil, apply and.intro,
-                        { intros y Hy, exact false.elim Hy },
-                        { intros x y Hx, exact false.elim Hx.1 }
-                      },
-                      { cases ih_1 with ys' Hys' x xs,
-                        cases rFI x with ys Hys,
-                        existsi list.append ys ys',
-                        apply and.intro,
-                        { intros y Hy,
-                          have Hy' : y ∈ ys ∨ y ∈ ys', from set.in_append Hy,
-                          cases Hy' with Hy' Hy',
-                          { existsi x,
-                            apply and.intro,
-                            { exact or.inl rfl },
-                            { exact (Hys _).2 Hy' }
-                          },
-                          { cases Hys'.1 Hy' with x' Hx',
-                            existsi x',
-                            refine and.intro (or.inr Hx'.1) Hx'.2,
-                          }
-                        },
-                        { intros x' y Hx'y,
-                          cases Hx'y with Hx' Rx'y,
-                          cases Hx' with Hx' Hx',
-                          { subst Hx',
-                            have Q : y ∈ ys := (Hys _).1 Rx'y,
-                            exact set.in_append_left Q
-                          },
-                          { dsimp at Hx',
-                            have Q : y ∈ ys' := Hys'.2 (and.intro Hx' Rx'y),
-                            exact set.in_append_right Q
-                          }
-                        }
-                      }
-                    end,
-      cases Q with ys Hys,
-      let W : set Y.PrimeSpec := PrimeSpec.BasicOpen (λ y, y ∈ ys),
-      existsi (eq W),
-      apply and.intro,
-      { intros W' E,
-        have E' : W = W', from E, subst E',
-        existsi ys, trivial
-      },
-      { apply funext, intro p,
-        apply iff.to_eq,
-        apply iff.intro,
-        { intro H,
-          existsi W,
-          apply exists.intro rfl,
-          intros y Hy,
-          cases (Hys.1 Hy.1) with x Hx,
-          apply @H x,
-          apply and.intro Hx.1,
-          existsi y,
-          exact and.intro Hy.2 Hx.2,
+      let c : (Alg.PrimeSpec.OpenBasis X).OI → (Alg.PrimeSpec.Topology Y).OI
+           := λ x y, y = r.Fn x,
+      apply OpenBasis.Continuous c,
+      intro oix,
+      apply funext, intro p,
+      apply iff.to_eq, apply iff.intro,
+      { intro H,
+        existsi PreImage (PrimePres.InducedMap @rPP @rI) (PrimeSpec.BasicOpen oix),
+        refine exists.intro _ _,
+        { existsi r.Fn oix,
+          apply and.intro rfl,
+          rw PrimePres.InducedMap.BasicPreImage,
+          trivial
         },
-        { intros H x Hx,
-          cases H with W' H,
-          cases H with E Hp,
-          have E' : W = W', from E, subst E', clear E,
-          apply Rel.FnInv.elim Hx.2,
-          intros y Hy Rxy,
-          refine Hp (and.intro _ Hy),
-          exact Hys.2 (and.intro Hx.1 Rxy)
+        { intros x Hx,
+          exact H Hx
         }
+      },
+      { intro H,
+        cases H with U H,
+        cases H with H Hpu,
+        cases H with V H,
+        cases H with E₁ E₂,
+        have E : V = r.Fn oix := E₁, subst E, clear E₁,
+        have E := E₂.symm, subst E, clear E₂,
+        intros x Hx,
+        cases Hx with Hx H,
+        cases H with y H,
+        apply Hpu (and.intro _ H.1),
+        existsi x,
+        exact and.intro Hx H.2
       }
     end
+
+
+-- def Alg.PrimeSpec.OpenBasis (A : Alg.{ℓ}) : OpenBasis A.PrimeSpec
+--  := { Open := λ U, ∃ (xs : list A.τ), U = PrimeSpec.BasicOpen (λ x, x ∈ xs)
+--     , Cover := begin
+--                 apply funext, intro p,
+--                 apply iff.to_eq,
+--                 apply iff.intro,
+--                 { intro T, clear T,
+--                   existsi (λ x, true),
+--                   apply exists.intro,
+--                   { existsi list.nil,
+--                     apply funext, intro p',
+--                     apply iff.to_eq,
+--                     apply iff.intro,
+--                     { intro T, clear T,
+--                       intros x Hx,
+--                       exact Hx.1
+--                     },
+--                     { intro H, constructor }
+--                   },
+--                   { constructor }
+--                 },
+--                 { intro H, constructor }
+--                end
+--     , Ointer := begin
+--                   intros U₁ U₂ H₁ H₂,
+--                   cases H₁ with L₁ E₁,
+--                   cases H₂ with L₂ E₂,
+--                   subst E₁, subst E₂,
+--                   existsi list.append L₁ L₂,
+--                   apply funext, intro p,
+--                   apply iff.to_eq,
+--                   apply iff.intro,
+--                   { intros H x Hx,
+--                     have Qx : x ∈ L₁ ∨ x ∈ L₂, from set.in_append Hx.1,
+--                     cases Qx with Qx Qx,
+--                     { exact H.1 (and.intro Qx Hx.2) },
+--                     { exact H.2 (and.intro Qx Hx.2) }
+--                   },
+--                   { intro H,
+--                     apply and.intro,
+--                     { intros x Hx,
+--                       have Qx : x ∈ list.append L₁ L₂, from set.in_append_left Hx.1,
+--                       exact H (and.intro Qx Hx.2)
+--                     },
+--                     { intros x Hx,
+--                       have Qx : x ∈ list.append L₁ L₂, from set.in_append_right Hx.1,
+--                       exact H (and.intro Qx Hx.2)
+--                     }
+--                   }
+--                 end
+--     }
+
+-- def Alg.PrimeSpec.Topology (A : Alg.{ℓ}) : Topology A.PrimeSpec
+--   := (Alg.PrimeSpec.OpenBasis A).Topology
+
+-- def PrimePres.InducedMap.Continuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
+--     (rPP : r.PrimePres)
+--     (rFI : r.FinIm)
+--   : Continuous (Alg.PrimeSpec.Topology Y) (Alg.PrimeSpec.Topology X)
+--                (PrimePres.InducedMap @rPP)
+--  := begin
+--       apply OpenBasis.Continuous,
+--       intros U Uopen,
+--       cases Uopen with xs E, subst E,
+--       have Q : ∃ (ys : list Y.τ)
+--                , (∀ {y}, y ∈ ys → ∃ x, x ∈ xs ∧ r x y)
+--                ∧ (∀ {x y}, x ∈ xs ∧ r x y → y ∈ ys)
+--              , from begin
+--                       induction xs with x xs,
+--                       { existsi list.nil, apply and.intro,
+--                         { intros y Hy, exact false.elim Hy },
+--                         { intros x y Hx, exact false.elim Hx.1 }
+--                       },
+--                       { cases ih_1 with ys' Hys' x xs,
+--                         cases rFI x with ys Hys,
+--                         existsi list.append ys ys',
+--                         apply and.intro,
+--                         { intros y Hy,
+--                           have Hy' : y ∈ ys ∨ y ∈ ys', from set.in_append Hy,
+--                           cases Hy' with Hy' Hy',
+--                           { existsi x,
+--                             apply and.intro,
+--                             { exact or.inl rfl },
+--                             { exact (Hys _).2 Hy' }
+--                           },
+--                           { cases Hys'.1 Hy' with x' Hx',
+--                             existsi x',
+--                             refine and.intro (or.inr Hx'.1) Hx'.2,
+--                           }
+--                         },
+--                         { intros x' y Hx'y,
+--                           cases Hx'y with Hx' Rx'y,
+--                           cases Hx' with Hx' Hx',
+--                           { subst Hx',
+--                             have Q : y ∈ ys := (Hys _).1 Rx'y,
+--                             exact set.in_append_left Q
+--                           },
+--                           { dsimp at Hx',
+--                             have Q : y ∈ ys' := Hys'.2 (and.intro Hx' Rx'y),
+--                             exact set.in_append_right Q
+--                           }
+--                         }
+--                       }
+--                     end,
+--       cases Q with ys Hys,
+--       let W : set Y.PrimeSpec := PrimeSpec.BasicOpen (λ y, y ∈ ys),
+--       existsi (eq W),
+--       apply and.intro,
+--       { intros W' E,
+--         have E' : W = W', from E, subst E',
+--         existsi ys, trivial
+--       },
+--       { apply funext, intro p,
+--         apply iff.to_eq,
+--         apply iff.intro,
+--         { intro H,
+--           existsi W,
+--           apply exists.intro rfl,
+--           intros y Hy,
+--           cases (Hys.1 Hy.1) with x Hx,
+--           apply @H x,
+--           apply and.intro Hx.1,
+--           existsi y,
+--           exact and.intro Hy.2 Hx.2,
+--         },
+--         { intros H x Hx,
+--           cases H with W' H,
+--           cases H with E Hp,
+--           have E' : W = W', from E, subst E', clear E,
+--           apply Rel.FnInv.elim Hx.2,
+--           intros y Hy Rxy,
+--           refine Hp (and.intro _ Hy),
+--           exact Hys.2 (and.intro Hx.1 Rxy)
+--         }
+--       }
+--     end
 
 
 -- Here we allow C to be an arbitrary set, but in practice the only
