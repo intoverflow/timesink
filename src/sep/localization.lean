@@ -5,6 +5,7 @@ import .basic
 import .option
 import .prod
 import .rel
+import .primeSpec
 import ..extralib
 
 namespace Sep
@@ -42,6 +43,13 @@ noncomputable def Mon.fn {A : Alg.{ℓ}}
       | (is_true H) := M.e { val := a, property := H }
       | (is_false H) := 0
     end
+
+def recip {A : Alg.{ℓ}}
+    (a : A.τ)
+  : Mon A
+ := { supp := [a]
+    , e := λ a, - 1
+    }
 
 noncomputable def add {A : Alg.{ℓ}}
     (M₁ M₂ : Mon A)
@@ -285,14 +293,16 @@ def local_join {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
 
 end Localization
 
-
-def JoinClosed.Localize {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+def Set.JoinClosed.Localize {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : Alg.{ℓ}
- := { τ := Localization.τ SJC
-    , join := Localization.local_join SJC
+ := { τ := {x : Localization.τ SJC // ∃ a f, x = ⟦ (some a, f) ⟧}
+    , join := λ x₁ x₂ x₃, Localization.local_join SJC x₁ x₂ x₃
     , comm := sorry
     , assoc := sorry
     }
 
+def PrimeLocalize {A : Alg.{ℓ}} (p : A.PrimeSpec)
+  : Alg.{ℓ}
+ := p.prime.Complement_JoinClosed.Localize
 
 end Sep
