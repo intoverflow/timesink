@@ -45,9 +45,9 @@ noncomputable def Mon.fn {A : Alg.{ℓ}}
     end
 
 def recip {A : Alg.{ℓ}}
-    (a : A.τ)
+    (aa : list A.τ)
   : Mon A
- := { supp := [a]
+ := { supp := aa
     , e := λ a, - 1
     }
 
@@ -304,5 +304,14 @@ def Set.JoinClosed.Localize {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
 def PrimeLocalize {A : Alg.{ℓ}} (p : A.PrimeSpec)
   : Alg.{ℓ}
  := p.prime.Complement_JoinClosed.Localize
+
+def Alg.localize_at (A : Alg.{ℓ})
+    (q : A.PrimeSpec)
+    (a : A.τ)
+    (ff : list q.prime.Complement_JoinClosed.Alg.τ)
+  : (PrimeLocalize q).τ
+ := { val := ⟦ (some a, Localization.recip ff) ⟧
+    , property := exists.intro _ (exists.intro _ (quot.sound (Localization.equiv.refl _)))
+    }
 
 end Sep

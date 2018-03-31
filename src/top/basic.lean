@@ -17,6 +17,15 @@ structure Topology (A : Type.{ℓ})
     (Ointer : ∀ {O₁ O₂}, Open (inter O₁ O₂) = Open O₁ ∩ Open O₂)
     (Ounion : ∀ {O : set OI}, Open (union O) = set.sUnion (λ U, ∃ oi, oi ∈ O ∧ U = Open oi))
 
+def Topology.in_whole {A : Type.{ℓ}} (TA : Topology A) {x : A}
+  : x ∈ TA.Open TA.whole
+ := begin
+      have E₁ : true = set.univ x := rfl,
+      have E₂ := congr_fun TA.Whole.symm x,
+      refine cast _ true.intro,
+      exact eq.trans E₁ E₂
+    end
+
 instance OpenSet_has_inter (A : Type.{ℓ}) (TA : Topology A)
   : has_inter TA.OI
  := { inter := TA.inter

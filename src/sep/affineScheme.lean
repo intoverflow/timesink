@@ -12,24 +12,35 @@ open Top
 namespace Struct
 namespace Section
 
-def res_prime {X : Alg.{ℓ}}
+def non_vanishing {X : Alg.{ℓ}}
+    {o : (Alg.PrimeSpec.Topology X).OI}
+    (u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o})
+  : Type.{ℓ}
+ := {f // ∀ (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u}) , ¬ f ∈ q.val.set}
+
+def non_vanishing.res {X : Alg.{ℓ}}
+    {o : (Alg.PrimeSpec.Topology X).OI}
+    {u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o}}
+    (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u})
+    (f : non_vanishing u)
+  : q.val.prime.Complement_JoinClosed.Alg.τ
+ := { val := f.val, property := f.property q }
+
+def non_vanishing.res.val {X : Alg.{ℓ}}
+    {o : (Alg.PrimeSpec.Topology X).OI}
+    {u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o}}
+    {q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u}}
+    {f : non_vanishing u}
+  : (non_vanishing.res q f).val = f.val
+ := rfl
+
+def expand_prime {X : Alg.{ℓ}}
     {o : (Alg.PrimeSpec.Topology X).OI}
     {u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o}}
     (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u})
   : {p // p ∈ (Alg.PrimeSpec.Topology X).Open o}
  := { val := q.val
     , property := u.property q.property
-    }
-
-def res_ratio {X : Alg.{ℓ}}
-    {o : (Alg.PrimeSpec.Topology X).OI}
-    {u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o}}
-    (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u})
-    (a : X.τ)
-    (f : {f // ∀ (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u}) , ¬ f ∈ q.val.set})
-  : (PrimeLocalize q.val).τ
- := { val := ⟦ (some a, Localization.recip { val := f.val, property := f.property q }) ⟧
-    , property := exists.intro _ (exists.intro _ (quot.sound (Localization.equiv.refl _)))
     }
 
 structure τ {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
@@ -39,25 +50,59 @@ structure τ {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
     (continuous
       : ∀ (p : {p // p ∈ (Alg.PrimeSpec.Topology X).Open o})
         , ∃ (u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o})
-            (f : {f // ∀ (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u}) , ¬ f ∈ q.val.set})
+            (ff : list (non_vanishing u))
             (a : X.τ)
           , p.val ∈ (Alg.PrimeSpec.Topology X).Open u
           ∧ (∀ (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u})
-              , fn (res_prime q) = res_ratio q a f))
+              , fn (expand_prime q) = X.localize_at q a (list.map (non_vanishing.res q) ff)))
 
 end Section
 
 def Section {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
   : Alg.{ℓ}
  := { τ := Section.τ o
-    , join := sorry
-    , comm := sorry
-    , assoc := sorry
+    , join := λ s₁ s₂ s₃
+              , ∀ (p : {p // p ∈ (Alg.PrimeSpec.Topology X).Open o})
+                , (PrimeLocalize p.val).join (s₁.fn p) (s₂.fn p) (s₃.fn p)
+    , comm := λ s₁ s₃ s₃ J p, (PrimeLocalize p.val).comm (J p)
+    , assoc := λ s₁ s₂ s₃ s₁₂ s₁₂₃ J₁₂ J₁₂₃ P C
+               , sorry
+              --  , C { x := { fn := λ p, begin end
+              --             , continuous := begin end
+              --             }
+              --      , J₁ := begin end
+              --      , J₂ := begin end
+              --      }
     }
-
 
 end Struct
 
+def Alg.Struct (X : Alg.{ℓ})
+  : Sheaf (Alg.PrimeSpec.Topology X)
+ := { Section := Struct.Section
+    , ρ := sorry
+    , ρ_id := sorry
+    , ρ_circ := sorry
+    , locl := sorry
+    , glue := sorry
+    }
+
+
+def Alg.to_section (X : Alg.{ℓ})
+    (a : X.τ)
+  : (X.Struct.Section (Alg.PrimeSpec.Topology X).whole).τ
+ := { fn := λ p, X.localize_at p a []
+    , continuous
+       := begin
+            intro p,
+            refine exists.intro { val := (Alg.PrimeSpec.Topology X).whole, property := (λ q Hq, Hq) } _,
+            existsi list.nil,
+            existsi a,
+            apply and.intro (Alg.PrimeSpec.Topology X).in_whole,
+            intro q,
+            trivial
+          end
+    }
 
 
 -- namespace BasisStruct
