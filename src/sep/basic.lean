@@ -417,23 +417,18 @@ def LinearUnit.Ident (A : Alg.{ℓ})
         have Q₂ := Hu.2.1 x₂,
         cases Q₂ with y₂ Q₂,
         cases Q₂ with Jy₂ Q₂,
-        have K₁ : A.join u x₁ y₂, from
-          begin
-            cases Hu.1 i with v Juvi,
-            apply A.assoc (A.comm Juvi) J,
-            intro a, cases a with a J₁ J₂,
-            have E := Q₁ _ J₁, subst E, clear J₁,
-            have E : a = y₂, from
-              begin
-                apply A.assoc J₂ (A.comm Jy₂),
-                intro a', cases a' with a' J₁' J₂',
-                exact sorry -- maybe ? maybe not ?
-              end,
-            subst E, exact Jy₁
-          end,
-        have Ey : y₁ = y₂ := eq.trans (Q₁ _ K₁).symm (Q₂ _ Jy₂),
-        subst Ey, clear Q₁ Q₂,
-        exact Linear.injective Hu.2 Jy₁ Jy₂
+        apply A.assoc J (A.comm Jy₂),
+        intro a, cases a with a J₁ J₂,
+        have E : a = y₁ := Q₁ _ (A.comm J₁),
+        subst E, clear Q₁ J₁,
+        refine Linear.injective Hu.2 Jy₁ _,
+        apply A.assoc (A.comm Jy₁) (A.comm J₂),
+        intro a', cases a' with a' J₁' J₂',
+        have E : u = a' := Linear.well_defined Hu.2 Hi J₁',
+        subst E,
+        have E : y₂ = a := Linear.well_defined Hu.2 (A.comm J₂') Jy₁,
+        subst E,
+        exact Jy₂
       },
       { intro E, subst E,
         have Q := Hu.2.1 x₁,
@@ -447,85 +442,29 @@ def LinearUnit.Ident (A : Alg.{ℓ})
       }
     end
 
-def LinearUnit.Ident (A : Alg.{ℓ})
+def LinearUnit.GroupIdent (A : Alg.{ℓ})
     (H : ∃ u, u ∈ A.LinearUnit)
-  : ∃ i, (i ∈ A.LinearUnit ∧ ∀ x, A.join i x x)
+  : ∃ i, (i ∈ A.LinearUnit ∧ ∀ x, A.join i x = eq x)
  := begin
+      cases LinearUnit.Ident A H with i Hi,
       cases H with u Hu,
-      cases Hu.1 u with i Hi,
       existsi i,
+      refine and.intro _ Hi,
       apply and.intro,
-      { apply and.intro,
-        { apply ProperUnit.Divides Hu.1,
-          intros P C₁ C₂, exact C₁ (A.comm Hi)
-        },
-        apply and.intro,
-        { intro x,
-          have Q := Hu.2.1 x,
-          cases Q with ux Q,
-          cases Q with Hux Huniq,
-          apply A.assoc Hi Hux,
-          intro a,
-          existsi a.x,
-          apply and.intro a.J₁,
-          intros y Jy,
-          have E' : x = a.x := Linear.injective Hu.2 Hux a.J₂,
-          rw E'.symm, clear E',
-          cases a with a,
-          exact sorry
-        },
-        { intros x₁ x₂ E,
-          have Q₁ := Hu.2.1 x₁,
-          cases Q₁ with y₁ Q₁,
-          cases Q₁ with J₁ Hy₁,
-          have Q₂ := Hu.2.1 x₂,
-          cases Q₂ with y₂ Q₂,
-          cases Q₂ with J₂ Hy₂,
-          have Ey : y₁ = y₂, from
-            begin
-              apply A.assoc Hi J₁,
-              intro a₁,
-              apply A.assoc Hi J₂,
-              intro a₂,
-              cases a₁ with a₁ Ja₁₁ Ja₁₂,
-              cases a₂ with a₂ Ja₂₁ Ja₂₂,
-              have Ea : a₁ = a₂, from
-                begin
-                  exact sorry -- follows from E
-                end,
-              subst Ea,
-              exact Linear.well_defined Hu.2 Ja₁₂ Ja₂₂
-            end,
-          subst Ey,
-          apply Hu.2.2,
-          apply funext, intro y,
-          apply iff.to_eq, apply iff.intro,
-          { intro Jy,
-            have Q := Hy₁ _ Jy,
-            subst Q,
-            exact J₂
-          },
-          { intro Jy,
-            have Q := Hy₂ _ Jy,
-            subst Q,
-            exact J₁
-          }
-        }
+      { apply ProperUnit.Divides Hu.1,
+        intros P C₁ C₂,
+        apply @C₁ u,
+        rw Hi
       },
-      { intro x,
-        cases Hu.1 x with ux Jx,
-        apply A.assoc (A.comm Hi) Jx,
-        intro a,
-        cases a with a J₁ J₂,
-        have E : a = x, from
-          begin
-            have Q := Hu.2.1 ux,
-            cases Q with y Hy,
-            cases Hy with Hy₁ Hy₂,
-            exact eq.trans (Hy₂ _ J₁) (Hy₂ _ Jx).symm,
-          end,
-        subst E,
-        exact J₂
+      apply and.intro,
+      { intro x, existsi x,
+        apply and.intro,
+        { simp, rw Hi },
+        { intros y Hy, rw Hi at Hy, exact Hy.symm }
+      },
+      { intros x₁ x₂ J,
+        repeat { rw Hi at J },
+        rw J
       }
     end
 
