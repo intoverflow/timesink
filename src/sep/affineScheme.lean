@@ -9,7 +9,7 @@ namespace Sep
 universes ℓ ℓ₁ ℓ₂
 open Top
 
-namespace Struct
+namespace Structure
 namespace Section
 
 def expand_prime {X : Alg.{ℓ}}
@@ -140,7 +140,7 @@ def res_circ {X : Alg.{ℓ}}
   : res H₂₃ (res H₁₂ s) = res H₁₃ s
  := begin
       apply τ.eq, intro p, simp [res],
-      exact sorry
+      exact sorry -- is true
     end
 
 def locl {X : Alg}
@@ -163,16 +163,58 @@ def locl {X : Alg}
       cases HV with u Hu,
       cases Hu with Hu E',
       subst E',
-      have E' := congr_fun (congr_arg τ.fn (E { val := u, property := Hu })) ⟨p, Hp'⟩,
+      have E' := congr_fun
+                  (congr_arg τ.fn (E { val := u, property := Hu }))
+                  { val := p, property := Hp' },
       simp [res] at E',
       refine eq.trans _ (eq.trans E' _),
-      { exact sorry -- true
+      { exact sorry -- is true
       },
-      { exact sorry -- true
+      { exact sorry -- is true
       }
     end
 
+noncomputable def glue {X : Alg}
+    {U : (Alg.PrimeSpec.Topology X).OI}
+    {UU : set ((Alg.PrimeSpec.Topology X).OI)}
+    (Ucover : (Alg.PrimeSpec.Topology X).Open U = ⋃₀((Alg.PrimeSpec.Topology X).Open <$> UU))
+    (loc : Π (V : {V : (Alg.PrimeSpec.Topology X).OI // V ∈ UU}), τ V.val)
+    (E : ∀ (V₁ V₂ : {V : (Alg.PrimeSpec.Topology X).OI // V ∈ UU})
+         , res (Topology.Inter.Subset_l _ V₂.val) (loc V₁)
+            = res (Topology.Inter.Subset_r V₁.val _) (loc V₂))
+  : τ U
+ := { fn := λ p, let v := Topology.Cover.mem_fn Ucover p
+                 in cast
+                      begin trivial end
+                      ((loc { val := v.val, property := v.property.1 }).fn
+                            { val := p.val, property := v.property.2 })
+    , continuous
+       := begin
+            intro p,
+            let v := Topology.Cover.mem_fn Ucover p,
+            have Q := (loc { val := v.val, property := v.property.1 }).continuous
+                           { val := p.val, property := v.property.2 },
+            cases Q with v' Q,
+            cases Q with ff Q,
+            cases Q with a Q,
+            refine exists.intro { val := v'.val, property := _ } _,
+            { intros x Hx,
+              apply Topology.Cover.Subset Ucover v.property.1,
+              apply v'.property,
+              exact Hx
+            },
+            existsi ff,
+            existsi a,
+            apply and.intro Q.1,
+            intro q,
+            refine eq.trans _ (Q.2 q),
+            simp,
+            exact sorry -- is true
+          end
+    }
+
 end Section
+
 
 def Section {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
   : Alg.{ℓ}
@@ -191,20 +233,20 @@ def Section {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
               --      }
     }
 
-end Struct
+end Structure
 
 def Alg.Struct (X : Alg.{ℓ})
   : Sheaf (Alg.PrimeSpec.Topology X)
- := { Section := Struct.Section
-    , ρ := λ U₁ U₂ H s₁ s₂, s₂ = Struct.Section.res H s₁
+ := { Section := Structure.Section
+    , ρ := λ U₁ U₂ H s₁ s₂, s₂ = Structure.Section.res H s₁
     , ρ_id
        := λ U H
           , begin
               apply funext, intro s₁,
               apply funext, intro s₂,
               apply iff.to_eq, apply iff.intro,
-              { intro E, rw [Struct.Section.res_id] at E, exact E.symm },
-              { intro E, rw [Struct.Section.res_id], exact E.symm }
+              { intro E, rw [Structure.Section.res_id] at E, exact E.symm },
+              { intro E, rw [Structure.Section.res_id], exact E.symm }
             end
     , ρ_circ
        := λ U₁ U₂ U₃ H₁₂ H₂₃ H₁₃
@@ -214,28 +256,50 @@ def Alg.Struct (X : Alg.{ℓ})
               apply iff.to_eq, apply iff.intro,
               { intro E, cases E with s' E, simp at E,
                 cases E with E₁ E₂, subst E₂, subst E₁,
-                rw [Struct.Section.res_circ]
+                rw [Structure.Section.res_circ]
               },
               { intro E,
-                existsi Struct.Section.res H₁₂ s₁,
+                existsi Structure.Section.res H₁₂ s₁,
                 simp, subst E,
-                rw [Struct.Section.res_circ]
+                rw [Structure.Section.res_circ]
               }
             end
     , locl
        := λ U UU Ucover s t E
           , begin
-              apply Struct.Section.locl Ucover,
+              apply Structure.Section.locl Ucover,
               intro V,
               have Q := congr_fun (E V)
-                          (Struct.Section.res
+                          (Structure.Section.res
                             (Topology.Cover.Subset Ucover V.property)
                             s),
               simp at Q,
               rw Q.symm,
               exact true.intro
             end
-    , glue := sorry
+    , glue
+       := λ U UU Ucover loc E
+          , begin
+              refine exists.intro (Structure.Section.glue Ucover loc _) _,
+              { intros V₁ V₂,
+                have Q := congr_fun (E V₁ V₂)
+                            (Structure.Section.res
+                              (Topology.Inter.Subset_l _ V₂.val)
+                              (loc V₁)),
+                simp at Q,
+                refine cast _ true.intro,
+                refine eq.trans _ Q,
+                apply iff.to_eq, apply iff.intro,
+                { intro H, trivial },
+                { intro H, exact true.intro }
+              },
+              { intro V,
+                apply Structure.Section.τ.eq,
+                intro p,
+                simp [Structure.Section.glue, Structure.Section.res],
+                exact sorry -- is true
+              }
+            end
     }
 
 

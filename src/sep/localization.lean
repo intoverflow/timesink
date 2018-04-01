@@ -324,4 +324,14 @@ def Alg.localize_at (A : Alg.{ℓ})
     , property := exists.intro _ (exists.intro _ (quot.sound (Localization.equiv.refl _)))
     }
 
+def Set.Localize {A : Alg.{ℓ}} (S : Set A)
+  : Alg.{ℓ}
+ := let p : A.PrimeSpec
+         := { set := set.sUnion (λ (p : Set A), p.Prime ∧ p.Integral ∧ S ∩ p = ∅)
+            , prime := begin apply Prime.Union, intros p H, exact H.1 end
+            , integral := begin apply Integral.Union, intros p H, exact H.2.1 end
+            }
+    in PrimeLocalize p
+
+
 end Sep

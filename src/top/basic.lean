@@ -65,6 +65,30 @@ def Topology.Cover.Subset {A : Type.{ℓ}} {TA : Topology A}
       exact and.intro H rfl
     end
 
+def Topology.Cover.mem {A : Type.{ℓ}} {TA : Topology A}
+    {U : TA.OI} {UU : set TA.OI}
+    (Ucover : TA.Open U = set.sUnion ((λ (U : TA.OI), TA.Open U) <$> UU))
+    (x : {x // x ∈ TA.Open U})
+  : ∃ U', U' ∈ UU ∧ x.val ∈ TA.Open U'
+ := begin
+      cases x with x H,
+      rw Ucover at H,
+      cases H with S H,
+      cases H with H Hx,
+      cases H with u' H,
+      cases H with Hu' E,
+      subst E,
+      existsi u',
+      exact and.intro Hu' Hx
+    end
+
+noncomputable def Topology.Cover.mem_fn {A : Type.{ℓ}} {TA : Topology A}
+    {U : TA.OI} {UU : set TA.OI}
+    (Ucover : TA.Open U = set.sUnion ((λ (U : TA.OI), TA.Open U) <$> UU))
+    (x : {x // x ∈ TA.Open U})
+  : { U' // U' ∈ UU ∧ x.val ∈ TA.Open U' }
+ := classical.indefinite_description _ (Topology.Cover.mem Ucover x)
+
 def Image {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (f : A → B)
   : set A → set B

@@ -358,6 +358,18 @@ def Unit.Rational (A : Alg.{ℓ})
 def Set.Integral {A : Alg.{ℓ}} (I : Set A) : Prop
  := ∀ x, x ∈ I → ¬ A.Unit x
 
+-- Arbitrary unions of primes are again prime
+def Integral.Union {A : Alg.{ℓ}}
+    (PP : set (Set A))
+    (H : ∀ (p : Set A), p ∈ PP → p.Integral)
+  : Set.Integral (set.sUnion PP)
+ := begin
+      intros x Hx F,
+      cases Hx with p HS,
+      cases HS with HPP Hxp,
+      exact H p HPP x Hxp F
+    end
+
 def Alg.WeakIdentity (A : Alg.{ℓ}) (w : A.τ) : Prop
  := ∀ (x), A.join w x x
 
