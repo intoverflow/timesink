@@ -242,13 +242,18 @@ def Divides.refl (A : Alg.{ℓ}) (x : A.τ)
  := λ P C₁ C₂ , C₂ rfl
 
 
-
 /- Parts
  -
  -/
 def Alg.Part (A : Alg.{ℓ}) (m : A.τ) : Prop
  := ∃ m₂ m₃, A.join m m₂ m₃
 
+
+/- Linear elements
+ -
+ -/
+def Alg.Linear (A : Alg.{ℓ}) : Set A
+ := λ u, ∀ x, ∃! y, A.join u x y
 
 
 /- Units
@@ -346,19 +351,31 @@ def Unit.Join {A : Alg.{ℓ}}
       { exact E }
     end
 
--- A set is Rational if it contains all of the units.
-def Set.Rational {A : Alg.{ℓ}} (R : Set A) : Prop
- := A.Unit ⊆ R
 
-def Unit.Rational (A : Alg.{ℓ})
-  : A.Unit.Rational
- := begin intros x Hx, exact Hx end
+/- Weak identities
+ -
+ -/
+def Alg.WeakIdentity (A : Alg.{ℓ}) (w : A.τ) : Prop
+ := ∀ (x), A.join w x x
+
+def WeakIdentity.Unit {A : Alg.{ℓ}} {w : A.τ} (wWeak : A.WeakIdentity w)
+  : A.Unit w
+ := λ x P C₁ C₂, C₁ (wWeak x)
+
+
+/- Rational and integral sets
+ -
+ -/
+
+-- A set is Rational if it contains all of the linear units.
+def Set.Rational {A : Alg.{ℓ}} (R : Set A) : Prop
+ := A.Unit ∩ A.Linear ⊆ R
 
 -- A set is Integral if it contains no units.
 def Set.Integral {A : Alg.{ℓ}} (I : Set A) : Prop
- := ∀ x, x ∈ I → ¬ A.Unit x
+ := ∀ x, x ∈ I → ¬ (A.Unit x ∧ A.Linear x)
 
--- Arbitrary unions of primes are again prime
+-- Arbitrary unions of integral sets are again integral
 def Integral.Union {A : Alg.{ℓ}}
     (PP : set (Set A))
     (H : ∀ (p : Set A), p ∈ PP → p.Integral)
@@ -369,13 +386,6 @@ def Integral.Union {A : Alg.{ℓ}}
       cases HS with HPP Hxp,
       exact H p HPP x Hxp F
     end
-
-def Alg.WeakIdentity (A : Alg.{ℓ}) (w : A.τ) : Prop
- := ∀ (x), A.join w x x
-
-def WeakIdentity.Unit {A : Alg.{ℓ}} {w : A.τ} (wWeak : A.WeakIdentity w)
-  : A.Unit w
- := λ x P C₁ C₂, C₁ (wWeak x)
 
 
 /- Primes

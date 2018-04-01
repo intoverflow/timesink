@@ -303,6 +303,44 @@ def Alg.Struct (X : Alg.{ℓ})
     }
 
 
+noncomputable def Alg.to_section' (X : Alg.{ℓ}) (S : Set X)
+    (a : S.Localize.τ)
+  : (X.Struct.Section (eq S)).τ
+ := { fn := λ p
+            , let af := S.local_represent a
+              in { val := ⟦ (some af.val.1
+                            , { supp := list.map
+                                          (λ f : S.LocalClosure.prime.Complement_JoinClosed.Alg.τ
+                                           , { val := f.val
+                                             , property
+                                                := λ F, sorry
+                                             })
+                                          af.val.2.supp
+                            , e := λ a', af.val.2.e
+                                          { val := { val := a'.val.val
+                                                   , property := λ F, sorry
+                                                   }
+                                          , property := sorry
+                                          }
+                            }) ⟧
+                 , property
+                    := exists.intro _
+                        (exists.intro _
+                          (quotient.sound (Localization.equiv.refl _)))
+                 }
+    , continuous
+       := begin
+            -- intro p,
+            -- refine exists.intro { val := (Alg.PrimeSpec.Topology X).whole, property := (λ q Hq, Hq) } _,
+            -- existsi list.nil,
+            -- existsi a,
+            -- apply and.intro (Alg.PrimeSpec.Topology X).in_whole,
+            -- intro q,
+            -- trivial
+            exact sorry
+          end
+    }
+
 def Alg.to_section (X : Alg.{ℓ})
     (a : X.τ)
   : (X.Struct.Section (Alg.PrimeSpec.Topology X).whole).τ
