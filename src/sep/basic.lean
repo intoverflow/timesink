@@ -249,20 +249,47 @@ def Alg.Part (A : Alg.{ℓ}) (m : A.τ) : Prop
  := ∃ m₂ m₃, A.join m m₂ m₃
 
 
-/- Linear elements
- -
- -/
-def Alg.Linear (A : Alg.{ℓ}) : Set A
- := λ u
-    , (∀ x, ∃! y, A.join u x y)
-      ∧ (∀ x₁ x₂, A.join u x₁ = A.join u x₂ → x₁ = x₂)
-
 
 /- Units
  -
  -/
 def Alg.Unit (A : Alg.{ℓ}) : Set A
  := λ u, ∀ x, A.Divides u x
+
+-- If w divides a unit, then w is also a unit
+def Unit.Divides {A : Alg.{ℓ}} {u} (uUnit : A.Unit u) (v : A.τ)
+  : A.Divides v u → A.Unit v
+ := begin
+      intro H,
+      intro x,
+      apply Divides.trans H,
+      apply uUnit
+    end
+
+-- Distinct units join with each other to form new units
+def Unit.Join {A : Alg.{ℓ}}
+    {u₁} (Uu₁ : A.Unit u₁)
+    {u₂} (Uu₂ : A.Unit u₂)
+    {P : Prop}
+    (C : ∀ u₃, u₃ ∈ A.join u₁ u₂ → A.Unit u₃ → P)
+    (E : u₁ = u₂ → P)
+  : P
+ := begin
+      apply Uu₁ u₂,
+      { intros w Jw,
+        apply Uu₂ w,
+        { intros v Jv,
+          apply A.assoc (A.comm Jv) (A.comm Jw),
+          intro a,
+          apply C a.x (A.comm a.J₁),
+          apply Unit.Divides Uu₂,
+          intros P C₁ C₂,
+          exact C₁ (A.comm a.J₂)
+        },
+        { intro E', subst E', apply C, repeat { assumption } }
+      },
+      { exact E }
+    end
 
 def Alg.ProperUnit (A : Alg.{ℓ}) : Set A
  := λ u, ∀ x, ∃ xu, A.join u xu x
@@ -318,39 +345,188 @@ def ProperUnit.Join {A : Alg.{ℓ}}
       exact C₁ (A.comm a.J₂)
     end
 
--- If w divides a unit, then w is also a unit
-def Unit.Divides {A : Alg.{ℓ}} {u} (uUnit : A.Unit u) (v : A.τ)
-  : A.Divides v u → A.Unit v
+/- Linear elements
+ -
+ -/
+def Alg.Linear (A : Alg.{ℓ}) : Set A
+ := λ u
+    , (∀ x, ∃! y, A.join u x y)
+      ∧ (∀ x₁ x₂, A.join u x₁ = A.join u x₂ → x₁ = x₂)
+
+def Linear.injective {A : Alg.{ℓ}} {l : A.τ} (lLinear : A.Linear l)
+    {x₁ x₂ y : A.τ}
+    (J₁ : A.join l x₁ y) (J₂ : A.join l x₂ y)
+  : x₁ = x₂
  := begin
-      intro H,
-      intro x,
-      apply Divides.trans H,
-      apply uUnit
+      apply lLinear.2,
+      apply funext, intro y₁,
+      apply iff.to_eq, apply iff.intro,
+      { intro J₁',
+        have Q₁ := lLinear.1 x₁,
+        cases Q₁ with y₁ Q₁,
+        cases Q₁ with Jy₁ Q₁,
+        have P := Q₁ _ J₁',
+        subst P,
+        have P := Q₁ _ J₁,
+        subst P,
+        exact J₂
+      },
+      { intro J₂',
+        have Q₁ := lLinear.1 x₂,
+        cases Q₁ with y₁ Q₁,
+        cases Q₁ with Jy₁ Q₁,
+        have P := Q₁ _ J₂',
+        subst P,
+        have P := Q₁ _ J₂,
+        subst P,
+        exact J₁
+      }
     end
 
--- Distinct units join with each other to form new units
-def Unit.Join {A : Alg.{ℓ}}
-    {u₁} (Uu₁ : A.Unit u₁)
-    {u₂} (Uu₂ : A.Unit u₂)
-    {P : Prop}
-    (C : ∀ u₃, u₃ ∈ A.join u₁ u₂ → A.Unit u₃ → P)
-    (E : u₁ = u₂ → P)
-  : P
+def Linear.well_defined {A : Alg.{ℓ}} {l : A.τ} (lLinear : A.Linear l)
+    {x y₁ y₂ : A.τ}
+    (J₁ : A.join l x y₁) (J₂ : A.join l x y₂)
+  : y₁ = y₂
  := begin
-      apply Uu₁ u₂,
-      { intros w Jw,
-        apply Uu₂ w,
-        { intros v Jv,
-          apply A.assoc (A.comm Jv) (A.comm Jw),
-          intro a,
-          apply C a.x (A.comm a.J₁),
-          apply Unit.Divides Uu₂,
-          intros P C₁ C₂,
-          exact C₁ (A.comm a.J₂)
-        },
-        { intro E', subst E', apply C, repeat { assumption } }
+      have Q := lLinear.1 x,
+      cases Q with y Q,
+      cases Q with Jy Q,
+      refine eq.trans (Q _ J₁) (Q _ J₂).symm,
+    end
+
+
+/- Linear units
+ -
+ -/
+def Alg.LinearUnit (A : Alg.{ℓ}) : Set A
+  := A.ProperUnit ∩ A.Linear
+
+def LinearUnit.Ident (A : Alg.{ℓ})
+    (H : ∃ u, u ∈ A.LinearUnit)
+  : ∃ i, (∀ x, A.join i x = eq x)
+ := begin
+      cases H with u Hu,
+      cases Hu.1 u with i Hi,
+      existsi i,
+      intro x₁, apply funext, intro x₂,
+      apply iff.to_eq, apply iff.intro,
+      { intro J,
+        have Q₁ := Hu.2.1 x₁,
+        cases Q₁ with y₁ Q₁,
+        cases Q₁ with Jy₁ Q₁,
+        have Q₂ := Hu.2.1 x₂,
+        cases Q₂ with y₂ Q₂,
+        cases Q₂ with Jy₂ Q₂,
+        have K₁ : A.join u x₁ y₂, from
+          begin
+            cases Hu.1 i with v Juvi,
+            apply A.assoc (A.comm Juvi) J,
+            intro a, cases a with a J₁ J₂,
+            have E := Q₁ _ J₁, subst E, clear J₁,
+            have E : a = y₂, from
+              begin
+                apply A.assoc J₂ (A.comm Jy₂),
+                intro a', cases a' with a' J₁' J₂',
+                exact sorry -- maybe ? maybe not ?
+              end,
+            subst E, exact Jy₁
+          end,
+        have Ey : y₁ = y₂ := eq.trans (Q₁ _ K₁).symm (Q₂ _ Jy₂),
+        subst Ey, clear Q₁ Q₂,
+        exact Linear.injective Hu.2 Jy₁ Jy₂
       },
-      { exact E }
+      { intro E, subst E,
+        have Q := Hu.2.1 x₁,
+        cases Q with y Q,
+        cases Q with Jy Q,
+        apply A.assoc Hi Jy,
+        intro a, cases a with a J₁ J₂,
+        have E : x₁ = a := Linear.injective Hu.2 Jy J₂,
+        subst E,
+        exact J₁
+      }
+    end
+
+def LinearUnit.Ident (A : Alg.{ℓ})
+    (H : ∃ u, u ∈ A.LinearUnit)
+  : ∃ i, (i ∈ A.LinearUnit ∧ ∀ x, A.join i x x)
+ := begin
+      cases H with u Hu,
+      cases Hu.1 u with i Hi,
+      existsi i,
+      apply and.intro,
+      { apply and.intro,
+        { apply ProperUnit.Divides Hu.1,
+          intros P C₁ C₂, exact C₁ (A.comm Hi)
+        },
+        apply and.intro,
+        { intro x,
+          have Q := Hu.2.1 x,
+          cases Q with ux Q,
+          cases Q with Hux Huniq,
+          apply A.assoc Hi Hux,
+          intro a,
+          existsi a.x,
+          apply and.intro a.J₁,
+          intros y Jy,
+          have E' : x = a.x := Linear.injective Hu.2 Hux a.J₂,
+          rw E'.symm, clear E',
+          cases a with a,
+          exact sorry
+        },
+        { intros x₁ x₂ E,
+          have Q₁ := Hu.2.1 x₁,
+          cases Q₁ with y₁ Q₁,
+          cases Q₁ with J₁ Hy₁,
+          have Q₂ := Hu.2.1 x₂,
+          cases Q₂ with y₂ Q₂,
+          cases Q₂ with J₂ Hy₂,
+          have Ey : y₁ = y₂, from
+            begin
+              apply A.assoc Hi J₁,
+              intro a₁,
+              apply A.assoc Hi J₂,
+              intro a₂,
+              cases a₁ with a₁ Ja₁₁ Ja₁₂,
+              cases a₂ with a₂ Ja₂₁ Ja₂₂,
+              have Ea : a₁ = a₂, from
+                begin
+                  exact sorry -- follows from E
+                end,
+              subst Ea,
+              exact Linear.well_defined Hu.2 Ja₁₂ Ja₂₂
+            end,
+          subst Ey,
+          apply Hu.2.2,
+          apply funext, intro y,
+          apply iff.to_eq, apply iff.intro,
+          { intro Jy,
+            have Q := Hy₁ _ Jy,
+            subst Q,
+            exact J₂
+          },
+          { intro Jy,
+            have Q := Hy₂ _ Jy,
+            subst Q,
+            exact J₁
+          }
+        }
+      },
+      { intro x,
+        cases Hu.1 x with ux Jx,
+        apply A.assoc (A.comm Hi) Jx,
+        intro a,
+        cases a with a J₁ J₂,
+        have E : a = x, from
+          begin
+            have Q := Hu.2.1 ux,
+            cases Q with y Hy,
+            cases Hy with Hy₁ Hy₂,
+            exact eq.trans (Hy₂ _ J₁) (Hy₂ _ Jx).symm,
+          end,
+        subst E,
+        exact J₂
+      }
     end
 
 
