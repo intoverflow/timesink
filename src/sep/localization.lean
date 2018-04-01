@@ -305,6 +305,16 @@ def PrimeLocalize {A : Alg.{ℓ}} (p : A.PrimeSpec)
   : Alg.{ℓ}
  := p.prime.Complement_JoinClosed.Localize
 
+def PrimeLocalize.eq {A : Alg.{ℓ}} {p : A.PrimeSpec}
+    (a₁ a₂ : (PrimeLocalize p).τ)
+    (H : a₁.val = a₂.val)
+  : a₁ = a₂
+ := begin
+      cases a₁ with a₁ H₁,
+      cases a₂ with a₂ H₂,
+      simp at H, subst H
+    end
+
 def Alg.localize_at (A : Alg.{ℓ})
     (q : A.PrimeSpec)
     (a : A.τ)

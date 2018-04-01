@@ -1,7 +1,7 @@
 
-namespace set
+universes ℓ ℓ₁ ℓ₂ ℓ₃ ℓ₄
 
-universe ℓ
+namespace set
 
 def sInter {A : Type.{ℓ}} : set (set A) → set A
  := λ X a, ∀ X₀ ∈ X, a ∈ X₀
@@ -83,4 +83,3 @@ def lift₃ {α : Sort u₁} {β : Sort u₂} {γ : Sort u₃} {φ : Sort u₄}
       q₁
 
 end quotient
-
