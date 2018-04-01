@@ -253,7 +253,9 @@ def Alg.Part (A : Alg.{ℓ}) (m : A.τ) : Prop
  -
  -/
 def Alg.Linear (A : Alg.{ℓ}) : Set A
- := λ u, ∀ x, ∃! y, A.join u x y
+ := λ u
+    , (∀ x, ∃! y, A.join u x y)
+      ∧ (∀ x₁ x₂, A.join u x₁ = A.join u x₂ → x₁ = x₂)
 
 
 /- Units
