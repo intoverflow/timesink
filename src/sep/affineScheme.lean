@@ -310,7 +310,7 @@ noncomputable def Alg.to_section' (X : Alg.{ℓ}) (S : Set X)
             , let af := S.local_represent a
               in { val := ⟦ (some af.val.1
                             , { supp := list.map
-                                          (λ f : S.LocalClosure.prime.Complement_JoinClosed.Alg.τ
+                                          (λ f : S.AvoidingPrime.prime.Complement_JoinClosed.Alg.τ
                                            , { val := f.val
                                              , property
                                                 := λ F, sorry

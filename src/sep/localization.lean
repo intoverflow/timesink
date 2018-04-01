@@ -324,7 +324,7 @@ def Alg.localize_at (A : Alg.{ℓ})
     , property := exists.intro _ (exists.intro _ (quot.sound (Localization.equiv.refl _)))
     }
 
-def Set.LocalClosure {A : Alg.{ℓ}} (S : Set A)
+def Set.AvoidingPrime {A : Alg.{ℓ}} (S : Set A)
   : A.PrimeSpec
  := { set := set.sUnion (λ (p : Set A), p.Prime ∧ p.Integral ∧ S ∩ p = ∅)
     , prime := begin apply Prime.Union, intros p H, exact H.1 end
@@ -333,7 +333,7 @@ def Set.LocalClosure {A : Alg.{ℓ}} (S : Set A)
 
 def Set.Localize {A : Alg.{ℓ}} (S : Set A)
   : Alg.{ℓ}
- := PrimeLocalize S.LocalClosure
+ := PrimeLocalize S.AvoidingPrime
 
 noncomputable def Set.local_represent {A : Alg.{ℓ}} (S : Set A)
     (af : S.Localize.τ)
