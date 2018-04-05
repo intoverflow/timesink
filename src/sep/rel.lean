@@ -1125,7 +1125,7 @@ def UpClosed.AlmostUnitPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel
 
 
 def Rel.UpUnitPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
- := r.Fn (A₁.Unit ∩ A₁.Linear) ⊆ A₂.Unit ∩ A₂.Linear
+ := r.Fn A₁.LinearUnit ⊆ A₂.LinearUnit
 
 def Rel.IntegralPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {I : Set A₂} (Iintegral : I.Integral)
@@ -1149,7 +1149,7 @@ def UnitPres.IntegralPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A
         intros y H,
         cases H with x H,
         cases H with Hx Rxy,
-        apply @classical.by_contradiction (y ∈ A₂.Unit ∩ A₂.Linear),
+        apply @classical.by_contradiction (y ∈ A₂.LinearUnit),
         intro F,
         have Q : @Set.Integral A₂ (eq y), from
           begin
@@ -1169,7 +1169,16 @@ def UnitPres.IntegralPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} {r : Rel A
       
 
 def Rel.DownUnitPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
- := A₂.Unit ∩ A₂.Linear ⊆ r.Fn (A₁.Unit ∩ A₁.Linear)
+ := A₂.LinearUnit ⊆ r.Fn A₁.LinearUnit
+
+def Reflexive.DownUnitPres {A : Alg.{ℓ₁}} (r : Rel A A)
+    (r_refl : ∀ a, r a a)
+  : r.DownUnitPres
+ := begin
+      intros x Hx,
+      existsi x,
+      exact and.intro Hx (r_refl x)
+    end
 
 def Rel.RationalPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {R : Set A₁} (Rrational : R.Rational)

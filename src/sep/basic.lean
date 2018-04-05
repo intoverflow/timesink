@@ -486,11 +486,11 @@ def WeakIdentity.Unit {A : Alg.{ℓ}} {w : A.τ} (wWeak : A.WeakIdentity w)
 
 -- A set is Rational if it contains all of the linear units.
 def Set.Rational {A : Alg.{ℓ}} (R : Set A) : Prop
- := A.Unit ∩ A.Linear ⊆ R
+ := A.LinearUnit ⊆ R
 
 -- A set is Integral if it contains no units.
 def Set.Integral {A : Alg.{ℓ}} (I : Set A) : Prop
- := ∀ x, x ∈ I → ¬ (A.Unit x ∧ A.Linear x)
+ := ∀ x, x ∈ I → ¬ (A.LinearUnit x)
 
 -- Arbitrary unions of integral sets are again integral
 def Integral.Union {A : Alg.{ℓ}}

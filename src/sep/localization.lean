@@ -61,9 +61,24 @@ noncomputable def add {A : Alg.{ℓ}}
 noncomputable instance Mon.has_add {A : Alg.{ℓ}} : has_add (Mon A)
  := { add := add }
 
-def linear {A : Alg.{ℓ}}
+noncomputable def sub {A : Alg.{ℓ}}
+    (M₁ M₂ : Mon A)
+  : Mon A
+ := { supp := list.append M₁.supp M₂.supp
+    , e := λ a, M₁.fn a - M₂.fn a
+    }
+
+noncomputable instance Mon.has_sub {A : Alg.{ℓ}} : has_sub (Mon A)
+ := { sub := sub }
+
+def add.linear {A : Alg.{ℓ}}
     (M₁ M₂ : Mon A) (a : A.τ)
-  : Mon.fn (add M₁ M₂) a = Mon.fn M₁ a + Mon.fn M₂ a
+  : Mon.fn (M₁ + M₂) a = Mon.fn M₁ a + Mon.fn M₂ a
+ := sorry
+
+def sub.linear {A : Alg.{ℓ}}
+    (M₁ M₂ : Mon A) (a : A.τ)
+  : Mon.fn (M₁ - M₂) a = Mon.fn M₁ a - Mon.fn M₂ a
  := sorry
 
 inductive Mon.simpl {A : Alg.{ℓ}}
@@ -93,31 +108,63 @@ def Mon.join (A : Alg.{ℓ})
       , (∀ a, x₁.fn a + x₂.fn a = x₃'.fn a)
       ∧ Mon.simpl x₃' x₃
 
+def Mon.join.pre_simpl {A : Alg.{ℓ}}
+    {x₁ x₂ x₃ x₁' x₂' x₃' : Mon A}
+    (J : ∀ a, x₁'.fn a + x₂'.fn a = x₃'.fn a)
+    (S₁ : Mon.simpl x₁ x₁')
+    (S₂ : Mon.simpl x₂ x₂')
+    (S₃ : Mon.simpl x₃' x₃)
+  : Mon.join A x₁ x₂ x₃
+ := sorry
+
 def MonAlg (A : Alg.{ℓ})
   : Alg.{ℓ}
  := { τ := Mon A
     , join := Mon.join A
     , comm
        := begin
-            -- intros x₁ x₂ x₃ Jx,
-            -- intro a,
-            -- rw (Jx a).symm,
-            -- simp
-            exact sorry
+            intros x₁ x₂ x₃ Jx,
+            cases Jx with x₃' H,
+            existsi x₃',
+            refine and.intro _ H.2,
+            intro a,
+            rw (H.1 a).symm,
+            simp
           end
     , assoc
        := begin
-            -- intros x₁ x₂ x₃ x₁₂ x₁₂₃ J₁₂ J₁₂₃,
-            -- intros P C, apply C ; clear C P,
-            -- refine { x := Mon.add x₂ x₃, J₁ := _, J₂ := _ },
-            -- { intro a, rw Mon.fn.linear },
-            -- { intro a,
-            --   rw (J₁₂₃ a).symm,
-            --   rw (J₁₂ a).symm,
-            --   rw Mon.fn.linear,
-            --   simp
-            -- }
-            exact sorry
+            intros x₁ x₂ x₃ x₁₂ x₁₂₃ J₁₂ J₁₂₃,
+            cases J₁₂ with x₁₂' J₁₂,
+            cases J₁₂ with E₁₂ S₁₂,
+            cases J₁₂₃ with x₁₂₃' J₁₂₃,
+            cases J₁₂₃ with E₁₂₃ S₁₂₃,
+            intros P C, apply C ; clear C P,
+            refine { x := x₂ + x₃ + x₁₂ - x₁₂', J₁ := _, J₂ := _ },
+            { existsi x₂ + x₃,
+              apply and.intro,
+              { intro a, exact (add.linear _ _ a).symm },
+              { exact sorry -- true by S₁₂
+              }
+            },
+            { existsi x₁₂₃',
+              refine and.intro _ S₁₂₃,
+              intro a,
+              have E : Mon.fn x₁ a + Mon.fn (x₂ + x₃ + x₁₂ - x₁₂') a
+                        = Mon.fn x₁ a + Mon.fn x₂ a + Mon.fn (x₃ + x₁₂ - x₁₂') a, from
+                begin
+                  exact sorry
+                end,
+              rw E, clear E,
+              rw E₁₂ a,
+              have E : Mon.fn x₁₂' a + Mon.fn (x₃ + x₁₂ - x₁₂') a
+                        = Mon.fn x₃ a + Mon.fn x₁₂ a, from
+                begin
+                  exact sorry
+                end,
+              rw E, clear E,
+              rw (E₁₂₃ a).symm,
+              simp
+            }
           end
     }
 
@@ -203,7 +250,19 @@ def join.comm {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     {x₁ x₂ x₃ : (FormalLocal SJC).τ}
     (J : join x₁ x₂ x₃)
   : join x₂ x₁ x₃
- := sorry
+ := begin
+      cases J with y₁ J,
+      cases J with y₂ J,
+      cases J with y₃ J,
+      cases J with J H,
+      cases H with H₁ H,
+      cases H with H₂ H₃,
+      existsi y₂, existsi y₁, existsi y₃,
+      apply and.intro ((FormalLocal SJC).comm J),
+      apply and.intro H₂,
+      apply and.intro H₁,
+      exact H₃
+    end
 
 def ident {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
   : (FormalLocal SJC).τ
@@ -212,20 +271,37 @@ def ident {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
 def ident_left {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     {x : (FormalLocal SJC).τ}
   : join ident x x
- := sorry
+ := begin
+      existsi ident, existsi x, existsi x,
+      apply and.intro,
+      { constructor,
+        { constructor },
+        { existsi x.snd,
+          apply and.intro,
+          { intro a, exact sorry -- is true
+          },
+          apply Mon.simpl.refl
+        }
+      },
+      apply and.intro,
+      { apply hide.refl },
+      apply and.intro,
+      { apply hide.refl },
+      { apply unhide.refl }
+    end
 
 
 def equiv {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
   : (FormalLocal SJC).τ → (FormalLocal SJC).τ → Prop
  := λ m₁ m₂
     , ∃ n x
-      , join n m₁ x ∧ join n m₂ x
+      , join (none, n) m₁ x ∧ join (none, n) m₂ x
 
 def equiv.refl {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     (x : (FormalLocal SJC).τ)
   : equiv x x
  := begin
-      existsi ident,
+      existsi Mon.zero SJC.Alg,
       existsi x,
       exact and.intro ident_left ident_left
     end
@@ -247,12 +323,28 @@ def equiv.trans {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     (E₁₂ : equiv x₁ x₂) (E₂₃ : equiv x₂ x₃)
   : equiv x₁ x₃
  := begin
-      cases E₁₂ with n₁₂ E₁₂,
-      cases E₁₂ with x₁₂ J₁₂,
-      cases J₁₂ with J₁₂₁ J₁₂₂,
-      cases E₂₃ with n₂₃ E₂₃,
-      cases E₂₃ with x₂₃ J₂₃,
-      cases J₂₃ with J₂₃₂ J₂₃₃,
+      cases E₁₂ with n₁₂ E₁₂, cases E₁₂ with x₁₂ J₁₂, cases J₁₂ with J₁₂₁ J₁₂₂,
+      --
+      cases J₁₂₁ with n₁₁₂' J₁₂₁, cases J₁₂₁ with x₁' J₁₂₁, cases J₁₂₁ with x₁₁₂' J₁₂₁,
+      cases J₁₂₁ with J₁₂₁ H, cases H with H H₁₂₁, cases H₁₂₁ with H₁₂₁ UH₁₂₁,
+      cases H, clear H,
+      --
+      cases J₁₂₂ with n₂₁₂' J₁₂₂, cases J₁₂₂ with x₂' J₁₂₂, cases J₁₂₂ with x₂₁₂' J₁₂₂,
+      cases J₁₂₂ with J₁₂₂ H, cases H with H H₁₂₂, cases H₁₂₂ with H₁₂₂ UH₁₂₂,
+      cases H, clear H,
+      --
+      cases E₂₃ with n₂₃ E₂₃, cases E₂₃ with x₂₃ J₂₃, cases J₂₃ with J₂₃₂ J₂₃₃,
+      --
+      cases J₂₃₂ with n₁₂₃' J₂₃₂, cases J₂₃₂ with x₂'' J₂₃₂, cases J₂₃₂ with x₁₂₃' J₂₃₂,
+      cases J₂₃₂ with J₂₃₂ H, cases H with H H₂₃₂, cases H₂₃₂ with H₂₃₂ UH₂₃₂,
+      cases H, clear H,
+      --
+      cases J₂₃₃ with n₂₂₃' J₂₃₃, cases J₂₃₃ with x₃' J₂₃₃, cases J₂₃₃ with x₂₂₃' J₂₃₃,
+      cases J₂₃₃ with J₂₃₃ H, cases H with H H₂₃₃, cases H, clear H,
+      cases H₂₃₃ with H₂₃₃ UH₂₃₃,
+      --
+      existsi (add n₁₂ n₂₃),
+      --
       exact sorry
     end
 
