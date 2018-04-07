@@ -44,6 +44,22 @@ noncomputable def Mon.fn {A : Alg.{ℓ}}
       | (is_false H) := 0
     end
 
+def Mon.equiv {A : Alg.{ℓ}}
+    (M₁ M₂ : Mon A)
+  : Prop
+ := ∀ a, M₁.fn a = M₂.fn a
+
+def Mon.equiv.refl {A : Alg.{ℓ}}
+    (M : Mon A)
+  : Mon.equiv M M
+ := λ a, rfl
+
+def Mon.equiv.trans {A : Alg.{ℓ}}
+    {M₁ M₂ M₃ : Mon A}
+    (E₁ : Mon.equiv M₁ M₂) (E₂ : Mon.equiv M₂ M₃)
+  : Mon.equiv M₁ M₃
+ := λ a, eq.trans (E₁ a) (E₂ a)
+
 def recip {A : Alg.{ℓ}}
     (aa : list A.τ)
   : Mon A
@@ -83,23 +99,52 @@ def sub.linear {A : Alg.{ℓ}}
 
 inductive Mon.simpl {A : Alg.{ℓ}}
   : Mon A → Mon A → Prop
-| refl : ∀ s, Mon.simpl s s
-| step  : ∀ (a₁ a₂ a₃ : A.τ) (r s : Mon A)
+| equiv : ∀ s₁ s₂, Mon.equiv s₁ s₂ → Mon.simpl s₁ s₂
+| step  : ∀ (s₁ s₂ : Mon A) (a₁ a₂ a₃ : A.τ) (r : Mon A)
             (J : A.join a₁ a₂ a₃)
-            (Hrs : Mon.simpl (Mon.single a₃ + r) s)
-         , Mon.simpl (Mon.single a₁ + Mon.single a₁ + r)
-                     s
+            (Hls : Mon.simpl s₁ (Mon.single a₁ + Mon.single a₂ + r))
+            (Hrs : Mon.simpl (Mon.single a₃ + r) s₂)
+         , Mon.simpl s₁ s₂
+
+def Mon.simpl.along_equiv {A : Alg.{ℓ}}
+    {s₁ s₂ s : Mon A}
+    (E : Mon.equiv s₁ s₂)
+    (S : Mon.simpl s₂ s)
+  : Mon.simpl s₁ s
+ := begin
+      induction S with _ _ S,
+      { apply Mon.simpl.equiv,
+        apply Mon.equiv.trans,
+        repeat { assumption }
+      },
+      { exact Mon.simpl.step _ _ _ _ _ _ J (ih_1 E) Hrs }
+    end
+
+def Mon.simpl.refl {A : Alg.{ℓ}}
+    (s : Mon A)
+  : Mon.simpl s s
+ := Mon.simpl.equiv _ _ (Mon.equiv.refl s)
 
 def Mon.simpl.trans {A : Alg.{ℓ}}
     {m₁ m₂ m₃ : Mon A}
   : Mon.simpl m₁ m₂ → Mon.simpl m₂ m₃ → Mon.simpl m₁ m₃
  := begin
       intros H₁₂ H₂₃,
-      induction H₁₂,
-      { exact H₂₃ },
-      { apply Mon.simpl.step _ _ _ _ _ J (ih_1 H₂₃),
-      }
+      induction H₁₂ with _ _ H₁₂,
+      { exact Mon.simpl.along_equiv H₁₂ H₂₃ },
+      { exact Mon.simpl.step _ _ _ _ _ _ J Hls (ih_2 H₂₃) }
     end
+
+def Mon.simpl.linear {A : Alg.{ℓ}}
+    {s s₁ s₂ : Mon A}
+    (H : Mon.simpl s₁ s₂)
+  : Mon.simpl (s + s₁) (s + s₂)
+ := sorry
+
+def Mon.simpl.add_assoc {A : Alg.{ℓ}}
+    {s₁ s₂ s₃ : Mon A}
+  : Mon.simpl (s₁ + (s₂ + s₃)) ((s₁ + s₂) + s₃)
+ := sorry
 
 def Mon.join (A : Alg.{ℓ})
   : Mon A → Mon A → Mon A → Prop
@@ -108,14 +153,14 @@ def Mon.join (A : Alg.{ℓ})
       , (∀ a, x₁.fn a + x₂.fn a = x₃'.fn a)
       ∧ Mon.simpl x₃' x₃
 
-def Mon.join.pre_simpl {A : Alg.{ℓ}}
-    {x₁ x₂ x₃ x₁' x₂' x₃' : Mon A}
-    (J : ∀ a, x₁'.fn a + x₂'.fn a = x₃'.fn a)
-    (S₁ : Mon.simpl x₁ x₁')
-    (S₂ : Mon.simpl x₂ x₂')
-    (S₃ : Mon.simpl x₃' x₃)
-  : Mon.join A x₁ x₂ x₃
- := sorry
+-- def Mon.join.pre_simpl {A : Alg.{ℓ}}
+--     {x₁ x₂ x₃ x₁' x₂' x₃' : Mon A}
+--     (J : ∀ a, x₁'.fn a + x₂'.fn a = x₃'.fn a)
+--     (S₁ : Mon.simpl x₁ x₁')
+--     (S₂ : Mon.simpl x₂ x₂')
+--     (S₃ : Mon.simpl x₃' x₃)
+--   : Mon.join A x₁ x₂ x₃
+--  := sorry
 
 def MonAlg (A : Alg.{ℓ})
   : Alg.{ℓ}
@@ -175,26 +220,53 @@ def FormalLocal {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
 
 inductive hide {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
   : Rel (FormalLocal SJC) (FormalLocal SJC)
-| refl : ∀ m, hide m m
+| none : ∀ s, hide (none, s) (none, s)
+| refl : ∀ x s (Hx : ¬ x ∈ S), hide (some x, s) (some x, s)
 | hide : ∀ (s₁ : SJC.Alg.τ)
            (s₂ : (MonAlg SJC.Alg).τ)
          , hide
             (some s₁.val, s₂)
             (none, add (Mon.single s₁) s₂)
 
+def do_hide {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    (x : (FormalLocal SJC).τ)
+  : ∃ x', hide x x'
+ := begin
+      cases x with x s,
+      cases x with x,
+      { existsi (none, s), apply hide.none },
+      { cases classical.em (x ∈ S) with Q Q,
+        { let x' : (Set.JoinClosed.Alg SJC).τ
+                 := { val := x, property := Q },
+          existsi (none, add (Mon.single x') s),
+          exact hide.hide x' s
+        },
+        { existsi (some x, s),
+          apply hide.refl _ _ Q
+        }
+      }
+    end
+
 def hide.by_cases {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     {m₁ m₂ : (FormalLocal SJC).τ}
     (H : hide m₁ m₂)
-  : m₁ = m₂
-    ∨ ∃ (s₁ : SJC.Alg.τ) (s₂ : (MonAlg SJC.Alg).τ)
-      , m₁ = (some s₁.val, s₂)
-      ∧ m₂ = (none, add (Mon.single s₁) s₂)
+  : (m₁.fst = none ∧ m₂.fst = none ∧ m₁.snd = m₂.snd)
+    ∨ (∃ x (s : (MonAlg SJC.Alg).τ)
+       , (¬ x ∈ S) ∧ m₁ = (some x, s) ∧ m₂ = (some x, s))
+    ∨ (∃ (s₁ : SJC.Alg.τ) (s₂ : (MonAlg SJC.Alg).τ)
+       , m₁ = (some s₁.val, s₂)
+       ∧ m₂ = (none, add (Mon.single s₁) s₂))
  := begin
       cases H,
-      { exact or.inl rfl },
-      { apply or.inr,
+      { apply or.inl, simp },
+      { apply or.inr, apply or.inl,
+        existsi x, existsi s,
+        apply and.intro Hx,
+        simp
+      },
+      { apply or.inr, apply or.inr,
         existsi s₁, existsi s₂,
-        exact and.intro rfl rfl
+        simp
       }
     end
 
@@ -227,15 +299,15 @@ def unhide.by_cases {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
       }
     end
 
-def hide.unhide {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
-    {x y : (FormalLocal SJC).τ}
-    (H : hide x y)
-  : unhide y x
- := begin
-      cases H,
-      { apply unhide.refl },
-      { apply unhide.unhide, constructor }
-    end
+-- def hide.unhide {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+--     {x y : (FormalLocal SJC).τ}
+--     (H : hide x y)
+--   : unhide y x
+--  := begin
+--       cases H,
+--       { apply unhide.refl },
+--       { apply unhide.unhide, constructor }
+--     end
 
 def join {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
   : (FormalLocal SJC).τ → (FormalLocal SJC).τ → (FormalLocal SJC).τ → Prop
@@ -272,11 +344,12 @@ def ident_left {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     {x : (FormalLocal SJC).τ}
   : join ident x x
  := begin
-      existsi ident, existsi x, existsi x,
+      cases do_hide x with x' Hx',
+      existsi ident, existsi x', existsi x',
       apply and.intro,
       { constructor,
         { constructor },
-        { existsi x.snd,
+        { existsi x'.snd,
           apply and.intro,
           { intro a, exact sorry -- is true
           },
@@ -284,10 +357,16 @@ def ident_left {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
         }
       },
       apply and.intro,
-      { apply hide.refl },
+      { apply hide.none },
       apply and.intro,
-      { apply hide.refl },
-      { apply unhide.refl }
+      { exact Hx' },
+      { cases Hx',
+        { apply unhide.refl },
+        { apply unhide.refl },
+        { apply unhide.unhide,
+          constructor
+        }
+      }
     end
 
 
@@ -345,8 +424,176 @@ def equiv.trans {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
       --
       existsi (add n₁₂ n₂₃),
       --
+      --
       exact sorry
     end
+
+def join_along_hide {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    {x y z x₁ x₂ z₁: (FormalLocal SJC).τ}
+    (H₁ : hide x x₁)
+    (H₂ : hide x x₂)
+    (UH : unhide z₁ z)
+    (J : (FormalLocal SJC).join x₁ y z₁)
+  : ∃ z₂, (FormalLocal SJC).join x₂ y z₂ ∧ unhide z₂ z
+ := begin
+      cases H₁ with H₁ ; clear H₁,
+      { cases H₂ with H₂ ; clear H₂,
+        existsi z₁, exact and.intro J UH,
+      },
+      { cases H₂ with H₂ ; clear H₂,
+        { existsi z₁, exact and.intro J UH },
+        { cases UH with UH w₁ w₃ w₂ ws Jw ; clear UH,
+          { existsi (y.fst, add (Mon.single s₁) z.snd),
+            apply and.intro,
+            { apply and.intro,
+              { constructor },
+              cases J with J₁ J₂,
+              cases J₂ with ω J₂,
+              existsi (add (Mon.single s₁) ω),
+              simp at *,
+              apply and.intro,
+              { exact Mon.simpl.linear J₂.1 },
+              { intro a,
+                have E : Mon.fn (add (Mon.single s₁) s) a
+                          = Mon.fn (Mon.single s₁) a + Mon.fn s a, from
+                  begin apply add.linear end,
+                rw E, clear E,
+                have E : Mon.fn (add (Mon.single s₁) ω) a
+                          = Mon.fn (Mon.single s₁) a + Mon.fn ω a, from
+                  begin apply add.linear end,
+                rw E, clear E,
+                rw (J₂.2 a).symm,
+                simp
+              }
+            },
+            { cases z with z sz,
+              apply unhide.unhide,
+              exact (Alg.Opt A).comm J.1
+            }
+          },
+          { apply (Alg.Opt A).assoc ((Alg.Opt A).comm J.1) Jw,
+            intro a, cases a with a Ha₁ Ha₂,
+            cases Ha₁ with _ _ a Ja,
+            have Ha : a ∈ S, from
+              begin
+                apply SJC _ _ _ Ja s₁.property w₂.property,
+              end,
+            let a' : (Set.JoinClosed.Alg SJC).τ
+                  := { val := a, property := Ha },
+            refine exists.intro (y.fst, add (Mon.single a') ws) _,
+            apply and.intro,
+            { apply and.intro,
+              { constructor },
+              { cases J with J₁ J₂,
+                cases J₂ with ω J₂,
+                existsi (add (Mon.single s₁) ω),
+                simp at *,
+                apply and.intro,
+                { refine Mon.simpl.trans (Mon.simpl.linear J₂.1) _,
+                  refine simpl.step _ _ s₁ w₂ a' ws Ja _ (Mon.simpl.refl _),
+                  exact Mon.simpl.add_assoc
+                },
+                { intro a,
+                  have E : Mon.fn (add (Mon.single s₁) s) a
+                            = Mon.fn (Mon.single s₁) a + Mon.fn s a, from
+                    begin apply add.linear end,
+                  rw E, clear E,
+                  have E : Mon.fn (add (Mon.single s₁) ω) a
+                            = Mon.fn (Mon.single s₁) a + Mon.fn ω a, from
+                    begin apply add.linear end,
+                  rw E, clear E,
+                  rw (J₂.2 a).symm,
+                  simp
+                }
+              }
+            },
+            { apply unhide.unhide,
+              exact Ha₂
+            }
+          }
+        }
+      },
+      { cases H₂.by_cases with H₂' H₂',
+        { cases H₂' with E H₂', injection E
+        },
+        { cases H₂' with H₂' H₂',
+          { cases H₂' with x' H₂',
+            cases H₂' with s' H₂',
+            cases H₂' with F H₂',
+            cases H₂' with E H₂',
+            injection E with E₁ E₂, clear E E₂,
+            injection E₁ with E₁', clear E₁,
+            subst E₁',
+            exact false.elim (F s₁.property)
+          },
+          { cases H₂' with a₁ H₂',
+            cases H₂' with a₂ H₂',
+            cases H₂' with E₁ E₂,
+            subst E₂,
+            injection E₁ with E₁₁ E₁₂, clear E₁,
+            subst E₁₂,
+            injection E₁₁ with E₁₁', clear E₁₁,
+            cases a₁ with a₁ Hs₁',
+            simp at E₁₁', subst E₁₁',
+            cases s₁ with s₁ Hs₁,
+            existsi z₁,
+            exact and.intro J UH
+          }
+        }
+      }
+    end
+
+def join.equiv₁ {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    {x₁ x₂ x₃ z₁ : (FormalLocal SJC).τ}
+    (J : join x₁ x₂ x₃)
+    (E₁ : equiv x₁ z₁)
+  : join z₁ x₂ x₃
+ := begin
+      cases E₁ with n₁ E₁, cases E₁ with w E₁, cases E₁ with Jx Jz,
+      cases J with x₁₁ J, cases J with x₂' J, cases J with x₃' J,
+      cases J with J Hx, cases Hx with Hx₁₁ Hx, cases Hx with Hx₂ UHx₃',
+      --
+      cases Jx with n₁' Jx, cases Jx with x₁₂ Jx, cases Jx with z₁₁ Jx,
+      cases Jx with Jz₁₁ Hx, cases Hx with E Hx, cases Hx with Hx₁₂ UHz₁₁w,
+      cases E, clear E,
+      --
+      have J_along := join_along_hide Hx₁₁ Hx₁₂ UHx₃' J,
+      cases J_along with x₃'' J_along,
+      cases J_along with J' UHx₃'',
+      clear UHx₃' J x₃' Hx₁₁ x₁₁,
+      --
+      cases Jz with n₁' Jz, cases Jz with z₁' Jz, cases Jz with z₁₂ Jz,
+      cases Jz with Jz₁₂ Hz, cases Hz with E Hz, cases Hz with Hz UHz₁₂w,
+      cases E, clear E,
+      --
+      cases Jz₁₁ with E₁ Jz₁₁,
+      cases Jz₁₂ with E₂ Jz₁₂,
+      have E₁₁ := Alg.Opt.join_none_l E₁, clear E₁,
+      have E₁₂ := Alg.Opt.join_none_l E₂, clear E₂,
+      cases x₁₂ with x₁₂ sx₁₂,
+      cases z₁' with z₁' sz₁',
+      cases z₁₁ with z₁₁ s₁₁,
+      cases z₁₂ with z₁₂ s₁₂,
+      simp at *,
+      subst E₁₁, subst E₁₂,
+      -- cases x₁ with x₁ sx₁,
+      -- cases z₁ with z₁ sz₁,
+      -- cases w with w s,
+      -- cases x₁₁ with x₁₁ sx₁₁,
+      --
+      --
+      exact sorry,
+      -- existsi (w, add s n₁),
+      -- existsi x₂', existsi x₃'',
+      -- refine and.intro _ (and.intro _ (and.intro Hx₂ UHx₃'')),
+    end
+
+def join.equiv₃ {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    {x₁ x₂ x₃ z₃ : (FormalLocal SJC).τ}
+    (Jx : join x₁ x₂ x₃)
+    (E₃ : equiv x₃ z₃)
+  : join x₁ x₂ z₃
+ := sorry
 
 def join.equiv {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     {x₁ x₂ x₃ z₁ z₂ z₃ : (FormalLocal SJC).τ}
@@ -355,7 +602,11 @@ def join.equiv {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     (E₂ : equiv x₂ z₂)
     (E₃ : equiv x₃ z₃)
   : join z₁ z₂ z₃
- := sorry
+ := begin
+      have Q₁ := join.equiv₁ Jx E₁,
+      have Q₂ := join.comm (join.equiv₁ (join.comm Q₁) E₂),
+      exact join.equiv₃ Q₂ E₃
+    end
 
 instance equiv_setoid {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : setoid (FormalLocal SJC).τ

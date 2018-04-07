@@ -78,4 +78,13 @@ def Alg.Opt.Ident (A : Alg.{ℓ})
           end
     }
 
+def Alg.Opt.join_none_l {A : Alg.{ℓ}}
+    {x₁ x₂ : option A.τ}
+    (J : A.Opt.join none x₁ x₂)
+  : x₁ = x₂
+ := begin
+      cases J,
+      repeat { trivial }
+    end
+
 end Sep

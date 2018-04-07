@@ -7,7 +7,7 @@ def Alg.Prod (A : Alg.{ℓ₁}) (B : Alg.{ℓ₂})
   : Alg.{max ℓ₁ ℓ₂}
   := { τ := A.τ × B.τ
      , join := λ x₁ x₂ x₃
-               , (x₃.1 ∈ A.join x₁.1 x₂.1) ∧ (x₃.2 ∈ B.join x₁.2 x₂.2)
+               , (A.join x₁.1 x₂.1 x₃.1) ∧ (B.join x₁.2 x₂.2 x₃.2)
      , comm := λ x₁ x₂ x₃ J
                , and.intro (A.comm J.1) (B.comm J.2)
      , assoc := λ x₁ x₂ x₃ x₁₂ x₁₂₃ J₁₂ J₁₂₃ P C
