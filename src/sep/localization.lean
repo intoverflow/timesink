@@ -287,6 +287,11 @@ def ident_left {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
       repeat { apply simpl.refl }
     end
 
+
+namespace equiv
+-- this is the equivalence relation you'd think you want,
+-- but it turns out it's equivalent to simpl!
+
 structure equiv_witness {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     (x₁ x₂ : (FormalLocal SJC).τ)
  := (n as bs : (MonAlg (Set.JoinClosed.Alg SJC)).τ)
@@ -299,6 +304,27 @@ def equiv {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     (x₁ x₂ : (FormalLocal SJC).τ)
   : Prop
  := ∀ (P : Prop) (C : equiv_witness x₁ x₂ → P), P
+
+def equiv.simpl {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    {x₁ x₂ : (FormalLocal SJC).τ}
+    (E : equiv x₁ x₂)
+  : simpl x₁ x₂
+ := begin
+      rename E E', apply E', intro E,
+      have H : simpl x₁ (x₁.fst, sub (add x₁.snd E.n) E.n), from sorry,
+      apply simpl.trans H, clear H,
+      have H : simpl (x₁.fst, sub (add x₁.snd E.n) E.n)
+                     (E.a, sub (add E.as E.n) E.n), from sorry,
+      apply simpl.trans H, clear H,
+      have H : simpl (E.a, sub (add E.as E.n) E.n)
+                     (E.b, sub (add E.bs E.n) E.n), from sorry,
+      apply simpl.trans H, clear H,
+      have H : simpl (E.b, sub (add E.bs E.n) E.n)
+                     (x₂.fst, sub (add x₂.snd E.n) E.n), from sorry,
+      apply simpl.trans H, clear H,
+      have H : simpl (x₂.fst, sub (add x₂.snd E.n) E.n) x₂, from sorry,
+      exact H
+    end
 
 def equiv.refl {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     (x : (FormalLocal SJC).τ)
@@ -356,49 +382,64 @@ def equiv.trans {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
                       end
               }
     end
+end equiv
 
-def join.equiv₁ {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+def join.simpl₁ {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     {x₁ x₂ x₃ z₁ : (FormalLocal SJC).τ}
     (Jx : join x₁ x₂ x₃)
-    (E₃ : equiv x₁ z₁)
+    (E₁ : simpl x₁ z₁)
   : join z₁ x₂ x₃
- := sorry
-
-def join.equiv₃ {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
-    {x₁ x₂ x₃ z₃ : (FormalLocal SJC).τ}
-    (Jx : join x₁ x₂ x₃)
-    (E₃ : equiv x₃ z₃)
-  : join x₁ x₂ z₃
- := sorry
-
-def join.equiv {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
-    {x₁ x₂ x₃ z₁ z₂ z₃ : (FormalLocal SJC).τ}
-    (Jx : join x₁ x₂ x₃)
-    (E₁ : equiv x₁ z₁)
-    (E₂ : equiv x₂ z₂)
-    (E₃ : equiv x₃ z₃)
-  : join z₁ z₂ z₃
  := begin
-      have Q₁ := join.equiv₁ Jx E₁,
-      have Q₂ := join.comm (join.equiv₁ (join.comm Q₁) E₂),
-      exact join.equiv₃ Q₂ E₃
+      cases Jx with y₁ Jx, cases Jx with y₂ Jx, cases Jx with y₃ Jx,
+      cases Jx with Jy Sxy, cases Sxy with Sxy₁ Sxy, cases Sxy with Sxy₂ Sxy₃,
+      existsi y₁, existsi y₂, existsi y₃,
+      apply and.intro Jy,
+      refine and.intro _ (and.intro Sxy₂ Sxy₃),
+      exact simpl.trans E₁.symm Sxy₁
     end
 
-instance equiv_setoid {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+def join.simpl₃ {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    {x₁ x₂ x₃ z₃ : (FormalLocal SJC).τ}
+    (Jx : join x₁ x₂ x₃)
+    (E₃ : simpl x₃ z₃)
+  : join x₁ x₂ z₃
+ := begin
+      cases Jx with y₁ Jx, cases Jx with y₂ Jx, cases Jx with y₃ Jx,
+      cases Jx with Jy Sxy, cases Sxy with Sxy₁ Sxy, cases Sxy with Sxy₂ Sxy₃,
+      existsi y₁, existsi y₂, existsi y₃,
+      apply and.intro Jy,
+      refine and.intro Sxy₁ (and.intro Sxy₂ _),
+      exact simpl.trans E₃.symm Sxy₃
+    end
+
+def join.simpl {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    {x₁ x₂ x₃ z₁ z₂ z₃ : (FormalLocal SJC).τ}
+    (Jx : join x₁ x₂ x₃)
+    (E₁ : simpl x₁ z₁)
+    (E₂ : simpl x₂ z₂)
+    (E₃ : simpl x₃ z₃)
+  : join z₁ z₂ z₃
+ := begin
+      have Q₁ := join.simpl₁ Jx E₁,
+      have Q₂ := join.comm (join.simpl₁ (join.comm Q₁) E₂),
+      exact join.simpl₃ Q₂ E₃
+    end
+
+instance simpl_setoid {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : setoid (FormalLocal SJC).τ
- := { r := equiv
+ := { r := simpl
     , iseqv := begin
-                 apply and.intro equiv.refl,
+                 apply and.intro simpl.refl,
                  apply and.intro,
-                 { apply equiv.symm },
-                 { apply equiv.trans }
+                 { apply simpl.symm },
+                 { apply simpl.trans }
                end
     }
 
 
 def τ {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : Type.{ℓ}
- := quot (@equiv _ _ SJC)
+ := quot (@simpl _ _ SJC)
 
 def local_join {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : τ SJC → τ SJC → τ SJC → Prop
@@ -407,8 +448,8 @@ def local_join {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
       (λ x₁ x₂ x₃ z₁ z₂ z₃ E₁ E₂ E₃
        , iff.to_eq
           (iff.intro
-            (λ Jx, join.equiv Jx E₁ E₂ E₃)
-            (λ Jx, join.equiv Jx E₁.symm E₂.symm E₃.symm)))
+            (λ Jx, join.simpl Jx E₁ E₂ E₃)
+            (λ Jx, join.simpl Jx E₁.symm E₂.symm E₃.symm)))
 
 end Localization
 
@@ -440,7 +481,7 @@ def Alg.localize_at (A : Alg.{ℓ})
     (ff : list q.prime.Complement_JoinClosed.Alg.τ)
   : (PrimeLocalize q).τ
  := { val := ⟦ (some a, Localization.recip ff) ⟧
-    , property := exists.intro _ (exists.intro _ (quot.sound (Localization.equiv.refl _)))
+    , property := exists.intro _ (exists.intro _ (quot.sound (Localization.simpl.refl _)))
     }
 
 def Set.AvoidingPrime {A : Alg.{ℓ}} (S : Set A)
