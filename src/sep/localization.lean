@@ -220,11 +220,17 @@ def simpl.symm {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
         },
         { apply simpl.step _ _ _ (simpl_step.split_l _ _ _ _ J),
           refine simpl.step _ _ _ (simpl_step.equiv _ _ _ _) (simpl.refl _),
-          exact sorry -- is true
+          intro a,
+          apply eq.trans (add.linear _ _ _),
+          apply eq.trans (congr_arg _ (sub.linear _ _ _)),
+          simp
         },
         { apply simpl.step _ _ _ (simpl_step.join_l _ _ _ _ J),
           refine simpl.step _ _ _ (simpl_step.equiv _ _ _ _) (simpl.refl _),
-          exact sorry -- is true
+          intro a,
+          apply eq.trans (sub.linear _ _ _),
+          apply eq.trans (congr_arg (λ x, x - Mon.fn (Mon.single s₂) a) (add.linear _ _ _)),
+          simp
         },
         { apply simpl.step _ _ _ (simpl_step.split_r _ _ _ _ _ J),
           apply simpl.refl
