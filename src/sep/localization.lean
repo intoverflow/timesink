@@ -516,13 +516,14 @@ def Set.JoinClosed.Localize {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
                 have Hs₀ : ∃ s₀, s₀ ∈ S, from sorry,
                 cases Hs₀ with s₀ Hs₀,
                 let s' := Localization.sub s (Localization.Mon.single ⟨s₀, Hs₀⟩),
+                have E' : quot.mk Localization.simpl (some s₀, s') = ⟦(none, s)⟧, from sorry,
                 refine C { x := { val := quot.mk _ (some s₀, s'), property := _ }
                          , J₁ := _
                          , J₂ := _
                          },
                 { existsi s₀, existsi s', trivial },
-                { simp at *, rw E₂, rw E₃, exact sorry },
-                { simp at *, rw E₁, rw E₁₂₃, exact sorry }
+                { simp at *, rw E₂, rw E₃, rw E', exact J₁ },
+                { simp at *, rw E₁, rw E₁₂₃, rw E', exact J₂ }
               },
               { refine C { x := { val := quot.mk _ (some a, s), property := _ }
                          , J₁ := _
