@@ -87,4 +87,14 @@ def Alg.Opt.join_none_l {A : Alg.{ℓ}}
       repeat { trivial }
     end
 
+def Alg.Opt.join_none_r {A : Alg.{ℓ}}
+    {x₁ x₂ : option A.τ}
+    (J : A.Opt.join x₁ none x₂)
+  : x₁ = x₂
+ := begin
+      apply Alg.Opt.join_none_l,
+      apply A.Opt.comm,
+      assumption
+    end
+
 end Sep
