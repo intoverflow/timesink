@@ -268,6 +268,10 @@ def join.comm {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
       exact H₃
     end
 
+def join.IsAssoc {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+  : IsAssoc (@join A S SJC)
+ := sorry
+
 def ident {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
   : (FormalLocal SJC).τ
  := (none, Mon.zero SJC.Alg)
@@ -457,14 +461,78 @@ def local_join {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
             (λ Jx, join.simpl Jx E₁ E₂ E₃)
             (λ Jx, join.simpl Jx E₁.symm E₂.symm E₃.symm)))
 
+def local_join.join {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    {a₁ : A.τ}
+    {f₁ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+    {a₂ : A.τ}
+    {f₂ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+    {a₃ : A.τ}
+    {f₃ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+    {a₃ : A.τ}
+    {f₃ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+    (J : local_join SJC ⟦(some a₁, f₁)⟧ ⟦(some a₂, f₂)⟧ ⟦(some a₃, f₃)⟧)
+  : join (some a₁, f₁) (some a₂, f₂) (some a₃, f₃)
+ := begin
+      exact J
+    end
+
 end Localization
 
 def Set.JoinClosed.Localize {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : Alg.{ℓ}
  := { τ := {x : Localization.τ SJC // ∃ a f, x = ⟦ (some a, f) ⟧}
-    , join := λ x₁ x₂ x₃, Localization.local_join SJC x₁ x₂ x₃
-    , comm := sorry
-    , assoc := sorry
+    , join := λ x₁ x₂ x₃, Localization.local_join SJC x₁.val x₂.val x₃.val
+    , comm
+       := λ x₁ x₂ x₃ J
+          , begin
+              cases x₁ with x₁ r₁,
+              cases x₂ with x₂ r₂,
+              cases x₃ with x₃ r₃,
+              induction x₁ with x₁,
+              induction x₂ with x₂,
+              induction x₃ with x₃,
+              { simp [Localization.local_join] at *,
+                simp [quotient.lift₃] at *,
+                simp [quotient.lift] at *,
+                exact Localization.join.comm J
+              },
+              repeat { trivial }
+            end
+    , assoc
+       := λ x₁ x₂ x₃ x₁₂ x₁₂₃ J₁₂ J₁₂₃
+          , begin
+              cases x₁ with x₁ r₁, cases r₁ with a₁ r₁, cases r₁ with f₁ E₁,
+              cases x₂ with x₂ r₂, cases r₂ with a₂ r₂, cases r₂ with f₂ E₂,
+              cases x₃ with x₃ r₃, cases r₃ with a₃ r₃, cases r₃ with f₃ E₃,
+              cases x₁₂ with x₁₂ r₁₂, cases r₁₂ with a₁₂ r₁₂, cases r₁₂ with f₁₂ E₁₂,
+              cases x₁₂₃ with x₁₂₃ r₁₂₃, cases r₁₂₃ with a₁₂₃ r₁₂₃, cases r₁₂₃ with f₁₂₃ E₁₂₃,
+              dsimp at *,
+              rw E₁ at *, rw E₂ at *, rw E₃ at *, rw E₁₂ at *, rw E₁₂₃ at *,
+              intros P C,
+              apply Localization.join.IsAssoc SJC J₁₂ J₁₂₃,
+              intro a, cases a with a J₁ J₂, cases a with a s, cases a with a,
+              { -- in this case, S cannot be empty, or J₁ is a contradiction.
+                -- So we can use a representative of S.
+                have Hs₀ : ∃ s₀, s₀ ∈ S, from sorry,
+                cases Hs₀ with s₀ Hs₀,
+                let s' := Localization.sub s (Localization.Mon.single ⟨s₀, Hs₀⟩),
+                refine C { x := { val := quot.mk _ (some s₀, s'), property := _ }
+                         , J₁ := _
+                         , J₂ := _
+                         },
+                { existsi s₀, existsi s', trivial },
+                { simp at *, rw E₂, rw E₃, exact sorry },
+                { simp at *, rw E₁, rw E₁₂₃, exact sorry }
+              },
+              { refine C { x := { val := quot.mk _ (some a, s), property := _ }
+                         , J₁ := _
+                         , J₂ := _
+                         },
+                { existsi a, existsi s, trivial },
+                { simp at *, rw E₂, rw E₃, exact J₁ },
+                { simp at *, rw E₁, rw E₁₂₃, exact J₂ }
+              },
+            end
     }
 
 def PrimeLocalize {A : Alg.{ℓ}} (p : A.PrimeSpec)
