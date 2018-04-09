@@ -268,9 +268,72 @@ def join.comm {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
       exact H₃
     end
 
+def join.IsAssoc_helper {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    (w₁ w₂ w₃ w₁₂₃ y₁₂ z₁₂ : (FormalLocal SJC).τ)
+    (S₁₂ : simpl y₁₂ z₁₂)
+    (H : ∃ y₁ y₂ z₃ z₁₂₃
+         , ((FormalLocal SJC).join y₁ y₂ y₁₂ ∧ (FormalLocal SJC).join z₁₂ z₃ z₁₂₃)
+         ∧ (simpl w₁ y₁ ∧ simpl w₂ y₂ ∧ simpl w₃ z₃ ∧ simpl w₁₂₃ z₁₂₃))
+  : ∃ v₁ v₂ v₁₂ v₃ v₁₂₃
+         , ((FormalLocal SJC).join v₁ v₂ v₁₂ ∧ (FormalLocal SJC).join v₁₂ v₃ v₁₂₃)
+         ∧ (simpl y₁₂ v₁₂ ∧ simpl w₁ v₁ ∧ simpl w₂ v₂ ∧ simpl w₃ v₃ ∧ simpl w₁₂₃ v₁₂₃)
+ := begin
+      induction S₁₂ with v₁₂ i₁ i₂ i₃ Si₁₂ Si₂₃ IH,
+      { cases H with v₁ H, cases H with v₂ H, cases H with v₃ H, cases H with v₁₂₃ H,
+        existsi v₁, existsi v₂, existsi v₁₂, existsi v₃, existsi v₁₂₃,
+        refine and.intro H.1 (and.intro (simpl.refl _) H.2)
+      },
+      { cases H with e₁ H, cases H with e₂ H, cases H with f₃ H, cases H with f₁₂₃ H,
+        cases H with J H, cases J with Je Jf,
+        cases H with Se₁ H, cases H with Se₂ H, cases H with Sf₃ Sf₁₂₃,
+        --
+        have Q : ∃ (y₁ y₂ z₃ z₁₂₃ : (FormalLocal SJC).τ)
+                  , ((FormalLocal SJC).join y₁ y₂ i₂ ∧ (FormalLocal SJC).join i₃ z₃ z₁₂₃)
+                  ∧ (simpl w₁ y₁ ∧ simpl w₂ y₂ ∧ simpl w₃ z₃ ∧ simpl w₁₂₃ z₁₂₃), from
+          begin
+            clear IH,
+            exact sorry
+          end,
+        have H := IH Q, clear IH Q,
+        cases H with v₁ H, cases H with v₂ H, cases H with v₁₂ H, cases H with v₃ H, cases H with v₁₂₃ H,
+        existsi v₁, existsi v₂, existsi v₁₂, existsi v₃, existsi v₁₂₃,
+        refine and.intro H.1 (and.intro _ H.2.2),
+        exact simpl.step _ _ _ Si₁₂ H.2.1
+      }
+    end
+
 def join.IsAssoc {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : IsAssoc (@join A S SJC)
- := sorry
+ := λ w₁ w₂ w₃ w₁₂ w₁₂₃ J₁₂ J₁₂₃
+    , begin
+        intros P C,
+        cases J₁₂ with y₁ J₁₂, cases J₁₂ with y₂ J₁₂, cases J₁₂ with y₁₂ J₁₂,
+        cases J₁₂ with J₁₂ Ty, cases Ty with T₁ Ty, cases Ty with T₂ Ty,
+        cases J₁₂₃ with z₁₂ J₁₂₃, cases J₁₂₃ with z₃ J₁₂₃, cases J₁₂₃ with z₁₂₃ J₁₂₃,
+        cases J₁₂₃ with J₁₂₃ Tz, cases Tz with Tz Tz', cases Tz' with T₃ T₁₂₃,
+        --
+        have Q := join.IsAssoc_helper w₁ w₂ w₃ w₁₂₃ y₁₂ z₁₂ (simpl.trans Ty.symm Tz)
+                    begin
+                      existsi y₁, existsi y₂, existsi z₃, existsi z₁₂₃,
+                      apply and.intro (and.intro J₁₂ J₁₂₃),
+                      repeat { apply and.intro, assumption },
+                      assumption
+                    end,
+        cases Q with v₁ Q, cases Q with v₂ Q, cases Q with v₁₂ Q, cases Q with v₃ Q, cases Q with v₁₂₃ Q,
+        cases Q with F Swv, cases F with F₁₂ F₁₂₃,
+        cases Swv with Swv₁₂ Swv, cases Swv with Swv₁ Swv, cases Swv with Swv₂ Swv, cases Swv with Swv₃ Swv₁₂₃,
+        apply (FormalLocal SJC).assoc F₁₂ F₁₂₃,
+        intro a, cases a with a ω₁₂ ω₁₂₃,
+        refine C { x := a, J₁ := _, J₂ := _ },
+        { existsi v₂, existsi v₃, existsi a,
+          repeat { apply and.intro, assumption },
+          apply simpl.refl
+        },
+        { existsi v₁, existsi a, existsi v₁₂₃,
+          repeat { apply and.intro, assumption },
+          exact and.intro (simpl.refl _) Swv₁₂₃
+        }
+      end
 
 def ident {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
   : (FormalLocal SJC).τ
