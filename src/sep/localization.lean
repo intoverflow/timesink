@@ -13,39 +13,39 @@ universes ℓ
 
 namespace Localization
 
-structure Mon (A : Alg.{ℓ})
+structure Mon (A : Type.{ℓ})
   : Type.{ℓ}
- := (supp : list A.τ)
+ := (supp : list A)
     (e : {a // a ∈ supp} → ℤ)
 
-def Mon.zero (A : Alg.{ℓ})
+def Mon.zero (A : Type.{ℓ})
   : Mon A
  := { supp := []
     , e := λ a, 0
     }
 
-def Mon.single {A : Alg.{ℓ}} (a : A.τ)
+def Mon.single {A : Type.{ℓ}} (a : A)
   : Mon A
  := { supp := [a]
     , e := λ a', 1
     }
 
-def Mon.opt_single {A : Alg.{ℓ}} (a : option A.τ)
- := match a with
-      | some a' := Mon.single a'
-      | none := Mon.zero A
-    end
+-- def Mon.opt_single {A : Alg.{ℓ}} (a : option A.τ)
+--  := match a with
+--       | some a' := Mon.single a'
+--       | none := Mon.zero A
+--     end
 
-noncomputable def Mon.fn {A : Alg.{ℓ}}
-    (M : Mon A) (a : A.τ)
+noncomputable def Mon.fn {A : Type.{ℓ}}
+    (M : Mon A) (a : A)
   : ℤ
  := match classical.prop_decidable (a ∈ M.supp) with
       | (is_true H) := M.e { val := a, property := H }
       | (is_false H) := 0
     end
 
-def Mon.fn.zero {A : Alg.{ℓ}}
-    {a : A.τ}
+def Mon.fn.zero {A : Type.{ℓ}}
+    {a : A}
   : Mon.fn (Mon.zero A) a = 0
  := begin
       simp [Mon.fn],
@@ -54,66 +54,66 @@ def Mon.fn.zero {A : Alg.{ℓ}}
       { cases Q }
     end
 
-def Mon.equiv {A : Alg.{ℓ}}
+def Mon.equiv {A : Type.{ℓ}}
     (M₁ M₂ : Mon A)
   : Prop
  := ∀ a, M₁.fn a = M₂.fn a
 
-def Mon.equiv.refl {A : Alg.{ℓ}}
+def Mon.equiv.refl {A : Type.{ℓ}}
     (M : Mon A)
   : Mon.equiv M M
  := λ a, rfl
 
-def Mon.equiv.symm {A : Alg.{ℓ}}
+def Mon.equiv.symm {A : Type.{ℓ}}
     {M₁ M₂ : Mon A}
     (E : Mon.equiv M₁ M₂)
   : Mon.equiv M₂ M₁
  := begin intro a, rw E a end
 
-def Mon.equiv.trans {A : Alg.{ℓ}}
+def Mon.equiv.trans {A : Type.{ℓ}}
     {M₁ M₂ M₃ : Mon A}
     (E₁ : Mon.equiv M₁ M₂) (E₂ : Mon.equiv M₂ M₃)
   : Mon.equiv M₁ M₃
  := λ a, eq.trans (E₁ a) (E₂ a)
 
-def recip {A : Alg.{ℓ}}
-    (aa : list A.τ)
+def recip {A : Type.{ℓ}}
+    (aa : list A)
   : Mon A
  := { supp := aa
     , e := λ a, - 1
     }
 
-noncomputable def add {A : Alg.{ℓ}}
+noncomputable def add {A : Type.{ℓ}}
     (M₁ M₂ : Mon A)
   : Mon A
  := { supp := list.append M₁.supp M₂.supp
     , e := λ a, M₁.fn a + M₂.fn a
     }
 
-noncomputable instance Mon.has_add {A : Alg.{ℓ}} : has_add (Mon A)
+noncomputable instance Mon.has_add {A : Type.{ℓ}} : has_add (Mon A)
  := { add := add }
 
-noncomputable def sub {A : Alg.{ℓ}}
+noncomputable def sub {A : Type.{ℓ}}
     (M₁ M₂ : Mon A)
   : Mon A
  := { supp := list.append M₁.supp M₂.supp
     , e := λ a, M₁.fn a - M₂.fn a
     }
 
-noncomputable instance Mon.has_sub {A : Alg.{ℓ}} : has_sub (Mon A)
+noncomputable instance Mon.has_sub {A : Type.{ℓ}} : has_sub (Mon A)
  := { sub := sub }
 
-def add.linear {A : Alg.{ℓ}}
-    (M₁ M₂ : Mon A) (a : A.τ)
+def add.linear {A : Type.{ℓ}}
+    (M₁ M₂ : Mon A) (a : A)
   : Mon.fn (M₁ + M₂) a = Mon.fn M₁ a + Mon.fn M₂ a
  := sorry
 
-def sub.linear {A : Alg.{ℓ}}
-    (M₁ M₂ : Mon A) (a : A.τ)
+def sub.linear {A : Type.{ℓ}}
+    (M₁ M₂ : Mon A) (a : A)
   : Mon.fn (M₁ - M₂) a = Mon.fn M₁ a - Mon.fn M₂ a
  := sorry
 
-def add.zero_r {A : Alg.{ℓ}}
+def add.zero_r {A : Type.{ℓ}}
     {M : Mon A}
   : Mon.equiv (M + Mon.zero A) M
  := begin
@@ -133,7 +133,7 @@ def add.zero_r {A : Alg.{ℓ}}
 --     end
 
 inductive Mon.simpl_step {A : Alg.{ℓ}}
-    : Mon A → Mon A → Prop
+    : Mon A.τ → Mon A.τ → Prop
 | equiv : ∀ m₁ m₂ (E : Mon.equiv m₁ m₂)
           , Mon.simpl_step m₁ m₂
 | join : ∀ s₁ s₂ s₃ s
@@ -146,13 +146,13 @@ inductive Mon.simpl_step {A : Alg.{ℓ}}
                            ((Mon.single s₁ + Mon.single s₂) + s)
 
 inductive Mon.simpl {A : Alg.{ℓ}}
-    : Mon A → Mon A → Prop
+    : Mon A.τ → Mon A.τ → Prop
 | refl : ∀ m, Mon.simpl m m
 | step : ∀ m₁ m₂ m₃ (S₁₂ : Mon.simpl_step m₁ m₂) (S₂₃ : Mon.simpl m₂ m₃)
          , Mon.simpl m₁ m₃
 
 def Mon.simpl.trans {A : Alg.{ℓ}}
-    {m₁ m₂ m₃ : Mon A}
+    {m₁ m₂ m₃ : Mon A.τ}
     (H₁₂ : Mon.simpl m₁ m₂) (H₂₃ : Mon.simpl m₂ m₃)
   : Mon.simpl m₁ m₃
  := begin
@@ -162,7 +162,7 @@ def Mon.simpl.trans {A : Alg.{ℓ}}
     end
 
 def Mon.simpl.symm {A : Alg.{ℓ}}
-    {m₁ m₂ : Mon A}
+    {m₁ m₂ : Mon A.τ}
     (H : Mon.simpl m₁ m₂)
   : Mon.simpl m₂ m₁
  := begin
@@ -180,14 +180,14 @@ def Mon.simpl.symm {A : Alg.{ℓ}}
     end
 
 def Mon.join (A : Alg.{ℓ})
-  : Mon A → Mon A → Mon A → Prop
+  : Mon A.τ → Mon A.τ → Mon A.τ → Prop
  := λ x₁ x₂ x₃
     , ∃ y₁ y₂ y₃
       , Mon.equiv (y₁ + y₂) y₃
       ∧ Mon.simpl y₁ x₁ ∧ Mon.simpl y₂ x₂ ∧ Mon.simpl x₃ y₃
 
 def Mon.join.assoc {A : Alg.{ℓ}}
-    (w₁ w₂ w₃ w₁₂₃ y₁₂ z₁₂ : Mon A)
+    (w₁ w₂ w₃ w₁₂₃ y₁₂ z₁₂ : Mon A.τ)
     (Sy : simpl z₁₂ y₁₂)
     (H : ∃ y₁ y₂ z₃ z₁₂₃
          , (Mon.equiv (y₁ + y₂) y₁₂ ∧ Mon.equiv (z₁₂ + z₃) z₁₂₃)
@@ -301,7 +301,7 @@ def Mon.join.assoc {A : Alg.{ℓ}}
 
 def MonAlg (A : Alg.{ℓ})
   : Alg.{ℓ}
- := { τ := Mon A
+ := { τ := Mon A.τ
     , join := Mon.join A
     , comm
        := begin
@@ -525,7 +525,7 @@ def join.IsAssoc {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
 
 def ident {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
   : (FormalLocal SJC).τ
- := (none, Mon.zero SJC.Alg)
+ := (none, Mon.zero _)
 
 def ident_left {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
     {x : (FormalLocal SJC).τ}
@@ -763,9 +763,9 @@ def PrimeLocalize.eq {A : Alg.{ℓ}} {p : A.PrimeSpec}
 def Alg.localize_at (A : Alg.{ℓ})
     (q : A.PrimeSpec)
     (a : A.τ)
-    (ff : list q.prime.Complement_JoinClosed.Alg.τ)
+    (ff : Localization.Mon q.prime.Complement_JoinClosed.Alg.τ)
   : (PrimeLocalize q).τ
- := { val := ⟦ (some a, Localization.recip ff) ⟧
+ := { val := ⟦ (some a, ff) ⟧
     , property := exists.intro _ (exists.intro _ (quot.sound (Localization.equiv.refl _)))
     }
 
