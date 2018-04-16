@@ -97,4 +97,16 @@ def Alg.Opt.join_none_r {A : Alg.{ℓ}}
       assumption
     end
 
+def Alg.Opt.join_some_r {A : Alg.{ℓ}}
+    {x₁} {x₂} {x₃ : option A.τ}
+    (J : A.Opt.join x₁ (some x₂) x₃)
+  : ¬ x₃ = none
+ := begin cases J, repeat { intro F, cases F } end
+
+def Alg.Opt.join_some_l {A : Alg.{ℓ}}
+    {x₁} {x₂} {x₃ : option A.τ}
+    (J : A.Opt.join (some x₁) x₂ x₃)
+  : ¬ x₃ = none
+ := begin cases J, repeat { intro F, cases F } end
+
 end Sep

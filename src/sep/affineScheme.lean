@@ -326,7 +326,7 @@ noncomputable def Alg.to_section' (X : Alg.{ℓ}) (S : Set X)
                  , property
                     := exists.intro _
                         (exists.intro _
-                          (quotient.sound (Localization.simpl.refl _)))
+                          (quotient.sound (Localization.equiv.refl _)))
                  }
     , continuous
        := begin
