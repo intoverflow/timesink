@@ -9,7 +9,7 @@ import .primeSpec
 import ..extralib
 
 namespace Sep
-universes ℓ
+universes ℓ ℓ₁ ℓ₂
 
 namespace Localization
 
@@ -17,6 +17,24 @@ structure Mon (A : Type.{ℓ})
   : Type.{ℓ}
  := (supp : list A)
     (e : {a // a ∈ supp} → ℤ)
+
+def Mon.sec {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    (f : A → B) (g : B → A) (H : ∀ a, g (f a) = a)
+  : Mon A → Mon B
+ := λ m, { supp := list.map f m.supp
+         , e := λ b, m.e { val := g b.val
+                         , property
+                           := begin
+                                cases b with b Hb,
+                                cases list.elem_map Hb with a Ha,
+                                cases Ha with E Ha,
+                                subst E,
+                                simp,
+                                rw H,
+                                exact Ha
+                              end
+                         }
+         }
 
 def Mon.zero (A : Type.{ℓ})
   : Mon A

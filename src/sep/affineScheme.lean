@@ -43,12 +43,15 @@ def non_vanishing.res {X : Alg.{ℓ}}
  := sorry
 
 noncomputable def non_vanishing.to {X : Alg.{ℓ}}
-    {o : (Alg.PrimeSpec.Topology X).OI}
-    {u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o}}
+    -- {o : (Alg.PrimeSpec.Topology X).OI}
+    -- {u : {u // (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o}}
+    {u : (Alg.PrimeSpec.Topology X).OI}
     (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u})
-    (f : Localization.Mon (non_vanishing u.val))
+    (f : Localization.Mon (non_vanishing u))
   : Localization.Mon q.val.prime.Complement_JoinClosed.Alg.τ
- := { supp := list.map (λ (x : non_vanishing u.val), { val := x.val, property := x.property q }) f.supp
+ := { supp := list.map (λ (x : non_vanishing u)
+                        , { val := x.val, property := x.property q })
+                       f.supp
     , e := λ a
            , f.fn { val := a.val.val
                   , property
@@ -313,27 +316,29 @@ def Alg.Struct (X : Alg.{ℓ})
             end
     }
 
-
 noncomputable def Alg.to_section' (X : Alg.{ℓ}) (S : Set X)
     (a₀ : S.Localize.τ)
   : (X.Struct.Section (eq S)).τ
  := let af := S.local_represent a₀
- in { fn := λ p
-            , { val := ⟦ (some af.val.1
-                          , { supp := list.map
-                                      (λ f : S.AvoidingPrime.prime.Complement_JoinClosed.Alg.τ
-                                      , { val := f.val
-                                        , property
-                                            := λ F, sorry
-                                        })
-                                      af.val.2.supp
-                            , e := λ a', af.val.2.e
-                                        { val := { val := a'.val.val
-                                                , property := λ F, sorry
-                                                }
-                                        , property := sorry
+ in let f' : ∀ (p : {p // p ∈ (Alg.PrimeSpec.Topology X).Open (eq S)})
+             , Localization.Mon p.val.prime.Complement_JoinClosed.Alg.τ
+           := λ p
+              , { supp := list.map
+                              (λ f : S.AvoidingPrime.prime.Complement_JoinClosed.Alg.τ
+                              , { val := f.val
+                                , property
+                                    := λ F, sorry
+                                })
+                              af.val.2.supp
+                    , e := λ a', af.val.2.e
+                                { val := { val := a'.val.val
+                                        , property := λ F, sorry
                                         }
-                        }) ⟧
+                                , property := sorry
+                                }
+                }
+ in { fn := λ p
+            , { val := ⟦ (some af.val.1, f' p) ⟧
                 , property
                     := exists.intro _
                         (exists.intro _
@@ -343,12 +348,32 @@ noncomputable def Alg.to_section' (X : Alg.{ℓ}) (S : Set X)
       := begin
             intro p,
             refine exists.intro { val := eq S, property := λ x H, H } _,
-            have Q := af.val.snd,
-            -- existsi af.val.snd,
-            -- existsi af.val.fst,
-            -- apply and.intro p.property,
-            -- intro q,
-            -- simp [Alg.localize_at],
+            simp,
+            refine exists.intro (Localization.Mon.sec _ _ _ af.val.2) _,
+            { intro x, refine { val := x.val, property := _ },
+              intros q F,
+              apply x.property,
+              existsi q.val.set,
+              refine exists.intro _ F,
+              apply and.intro q.val.prime,
+              apply and.intro q.val.integral,
+              exact sorry -- is true
+            },
+            { intro x, refine { val := x.val, property := _ },
+              intro F,
+              cases F with q Hq,
+              cases Hq with Hq F,
+              let q' : {p // p ∈ (Alg.PrimeSpec.Topology X).Open (eq S)}
+                    := { val := { set := q, prime := Hq.1, integral := Hq.2.1 }
+                       , property := begin exact sorry end
+                       },
+              exact x.property q' F
+            },
+            { intro a, cases a, trivial },
+            existsi af.val.1,
+            apply and.intro p.property,
+            intro q,
+            simp [Alg.localize_at],
             --
             exact sorry
           end

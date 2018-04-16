@@ -48,6 +48,28 @@ def in_append_right {A : Type.{ℓ}} {L₁ L₂ : list A}
 end set
 
 
+namespace list
+
+def elem_map {A : Type ℓ₁} {B : Type ℓ₂} {f : A → B}
+    {aa : list A} {b : B}
+    (H : b ∈ list.map f aa)
+  : ∃ a, b = f a ∧ a ∈ aa
+ := begin
+      induction aa with a aa,
+      { exact false.elim H },
+      { cases H with H H,
+        { existsi a, apply and.intro H, apply or.inl rfl },
+        { cases ih_1 H with a' Ha',
+          clear H ih_1,
+          existsi a',
+          exact and.intro Ha'.1 (or.inr Ha'.2),
+        }
+      }
+    end
+
+end list
+
+
 namespace quotient
 
 universes u₁ u₂ u₃ u₄
