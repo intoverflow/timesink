@@ -18,7 +18,7 @@ structure Mon (A : Type.{ℓ})
  := (supp : list A)
     (e : {a // a ∈ supp} → ℤ)
 
-def Mon.sec {A : Type.{ℓ}} {P₁ P₂ : set A}
+def Mon.subtype {A : Type.{ℓ}} {P₁ P₂ : set A}
     (m : Mon {a // P₁ a})
     (H : ∀ a, P₁ a → P₂ a)
   : Mon {a // P₂ a}
@@ -680,59 +680,67 @@ def join.equiv {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
       exact join.equiv₃ Q₂ E₃
     end
 
-instance simpl_setoid {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
-  : setoid (FormalLocal SJC).τ
- := { r := equiv
+def valid_local {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+  : Type.{ℓ}
+ := {x : (FormalLocal SJC).τ // ∃ a f, equiv x (some a, f)}
+
+instance valid_local_setoid {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
+  : setoid (valid_local SJC)
+ := { r := λ x₁ x₂, equiv x₁.val x₂.val
     , iseqv := begin
-                 apply and.intro equiv.refl,
                  apply and.intro,
-                 { apply equiv.symm },
-                 { apply equiv.trans }
+                 { intro x, apply equiv.refl },
+                 apply and.intro,
+                 { intros x₁ x₂ H, apply equiv.symm H },
+                 { intros x₁ x₂ x₃ H₁₂ H₂₃, apply equiv.trans H₁₂ H₂₃ }
                end
     }
 
-
 def τ {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : Type.{ℓ}
- := quot (@equiv _ _ SJC)
+ := @quot (valid_local SJC) (λ x₁ x₂, @equiv _ _ SJC x₁.val x₂.val)
+
+def coset {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+    (a : A.τ) (s : Mon SJC.Alg.τ)
+  : valid_local SJC
+ := { val := (some a, s)
+    , property := begin existsi a, existsi s, apply equiv.refl end
+    }
 
 def local_join {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : τ SJC → τ SJC → τ SJC → Prop
  := quotient.lift₃
-      join
+      (λ x₁ x₂ x₃, join x₁.val x₂.val x₃.val)
       (λ x₁ x₂ x₃ z₁ z₂ z₃ E₁ E₂ E₃
        , iff.to_eq
           (iff.intro
             (λ Jx, join.equiv Jx E₁ E₂ E₃)
             (λ Jx, join.equiv Jx E₁.symm E₂.symm E₃.symm)))
 
-def local_join.join {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
-    {a₁ : A.τ}
-    {f₁ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
-    {a₂ : A.τ}
-    {f₂ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
-    {a₃ : A.τ}
-    {f₃ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
-    {a₃ : A.τ}
-    {f₃ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
-    (J : local_join SJC ⟦(some a₁, f₁)⟧ ⟦(some a₂, f₂)⟧ ⟦(some a₃, f₃)⟧)
-  : join (some a₁, f₁) (some a₂, f₂) (some a₃, f₃)
- := begin
-      exact J
-    end
+-- def local_join.join {A : Alg.{ℓ}} {S : Set A} {SJC : S.JoinClosed}
+--     {a₁ : A.τ}
+--     {f₁ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+--     {a₂ : A.τ}
+--     {f₂ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+--     {a₃ : A.τ}
+--     {f₃ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+--     {a₃ : A.τ}
+--     {f₃ : (Localization.MonAlg (Set.JoinClosed.Alg SJC)).τ}
+--     (J : local_join SJC ⟦(some a₁, f₁)⟧ ⟦(some a₂, f₂)⟧ ⟦(some a₃, f₃)⟧)
+--   : join (some a₁, f₁) (some a₂, f₂) (some a₃, f₃)
+--  := begin
+--       exact J
+--     end
 
 end Localization
 
 def Set.JoinClosed.Localize {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
   : Alg.{ℓ}
- := { τ := {x : Localization.τ SJC // ∃ a f, x = ⟦ (some a, f) ⟧}
-    , join := λ x₁ x₂ x₃, Localization.local_join SJC x₁.val x₂.val x₃.val
+ := { τ := Localization.τ SJC
+    , join := Localization.local_join SJC
     , comm
        := λ x₁ x₂ x₃ J
           , begin
-              cases x₁ with x₁ r₁,
-              cases x₂ with x₂ r₂,
-              cases x₃ with x₃ r₃,
               induction x₁ with x₁,
               induction x₂ with x₂,
               induction x₃ with x₃,
@@ -746,38 +754,38 @@ def Set.JoinClosed.Localize {A : Alg.{ℓ}} {S : Set A} (SJC : S.JoinClosed)
     , assoc
        := λ x₁ x₂ x₃ x₁₂ x₁₂₃ J₁₂ J₁₂₃
           , begin
-              cases x₁ with x₁ r₁, cases r₁ with a₁ r₁, cases r₁ with f₁ E₁,
-              cases x₂ with x₂ r₂, cases r₂ with a₂ r₂, cases r₂ with f₂ E₂,
-              cases x₃ with x₃ r₃, cases r₃ with a₃ r₃, cases r₃ with f₃ E₃,
-              cases x₁₂ with x₁₂ r₁₂, cases r₁₂ with a₁₂ r₁₂, cases r₁₂ with f₁₂ E₁₂,
-              cases x₁₂₃ with x₁₂₃ r₁₂₃, cases r₁₂₃ with a₁₂₃ r₁₂₃, cases r₁₂₃ with f₁₂₃ E₁₂₃,
-              dsimp at *,
-              rw E₁ at *, rw E₂ at *, rw E₃ at *, rw E₁₂ at *, rw E₁₂₃ at *,
               intros P C,
-              apply Localization.join.IsAssoc SJC J₁₂ J₁₂₃,
-              intro a, cases a with a J₁ J₂, cases a with a s, cases a with a,
-              { -- in this case, S cannot be empty, or J₁ is a contradiction.
-                -- So we can use a representative of S.
-                have Hs₀ : ∃ s₀, s₀ ∈ S, from sorry,
-                cases Hs₀ with s₀ Hs₀,
-                let s' := Localization.sub s (Localization.Mon.single ⟨s₀, Hs₀⟩),
-                have E' : quot.mk Localization.equiv (some s₀, s') = ⟦(none, s)⟧, from sorry,
-                refine C { x := { val := quot.mk _ (some s₀, s'), property := _ }
-                         , J₁ := _
-                         , J₂ := _
-                         },
-                { existsi s₀, existsi s', trivial },
-                { simp at *, rw E₂, rw E₃, rw E', exact J₁ },
-                { simp at *, rw E₁, rw E₁₂₃, rw E', exact J₂ }
+              induction x₁ with x₁,
+              induction x₂ with x₂,
+              induction x₃ with x₃,
+              induction x₁₂ with x₁₂,
+              induction x₁₂₃ with x₁₂₃,
+              { apply Localization.join.IsAssoc SJC J₁₂ J₁₂₃,
+                intro a, cases a with a J₁ J₂,
+                cases a with a s,
+                cases a with a,
+                { -- in this case, S cannot be empty, or J₁ is a contradiction.
+                  -- So we can use a representative of S.
+                  have Hs₀ : ∃ s₀, s₀ ∈ S, from sorry,
+                  cases Hs₀ with s₀ Hs₀,
+                  let s' := Localization.sub s (Localization.Mon.single ⟨s₀, Hs₀⟩),
+                  have E' : Localization.equiv (some s₀, s') (none, s), from sorry,
+                  refine C { x := quot.mk _ { val := (some s₀, s'), property := _ }
+                          , J₁ := _
+                          , J₂ := _
+                          },
+                  { existsi s₀, existsi s', apply Localization.equiv.refl },
+                  { exact sorry },
+                  { exact sorry }
+                },
+                { refine C { x := quot.mk _ { val := (some a, s), property := _ }
+                          , J₁ := J₁
+                          , J₂ := J₂
+                          },
+                  existsi a, existsi s, apply Localization.equiv.refl,
+                }
               },
-              { refine C { x := { val := quot.mk _ (some a, s), property := _ }
-                         , J₁ := _
-                         , J₂ := _
-                         },
-                { existsi a, existsi s, trivial },
-                { simp at *, rw E₂, rw E₃, exact J₁ },
-                { simp at *, rw E₁, rw E₁₂₃, exact J₂ }
-              },
+              repeat { trivial }
             end
     }
 
@@ -785,24 +793,14 @@ def PrimeLocalize {A : Alg.{ℓ}} (p : A.PrimeSpec)
   : Alg.{ℓ}
  := p.prime.Complement_JoinClosed.Localize
 
-def PrimeLocalize.eq {A : Alg.{ℓ}} {p : A.PrimeSpec}
-    (a₁ a₂ : (PrimeLocalize p).τ)
-    (H : a₁.val = a₂.val)
-  : a₁ = a₂
- := begin
-      cases a₁ with a₁ H₁,
-      cases a₂ with a₂ H₂,
-      simp at H, subst H
-    end
-
 def Alg.localize_at (A : Alg.{ℓ})
     (q : A.PrimeSpec)
     (a : A.τ)
     (ff : Localization.Mon q.prime.Complement_JoinClosed.Alg.τ)
   : (PrimeLocalize q).τ
- := { val := ⟦ (some a, ff) ⟧
-    , property := exists.intro _ (exists.intro _ (quot.sound (Localization.equiv.refl _)))
-    }
+ := ⟦ { val := (some a, ff)
+      , property := exists.intro _ (exists.intro _ (Localization.equiv.refl _))
+      } ⟧
 
 def Set.AvoidingPrime {A : Alg.{ℓ}} (S : Set A)
   : A.PrimeSpec
@@ -813,16 +811,6 @@ def Set.AvoidingPrime {A : Alg.{ℓ}} (S : Set A)
 
 def Set.Localize {A : Alg.{ℓ}} (S : Set A)
   : Alg.{ℓ}
---  := PrimeLocalize S.AvoidingPrime
  := Set.JoinClosed.Localize (JoinClosure.JoinClosed S)
-
-noncomputable def Set.local_represent {A : Alg.{ℓ}} (S : Set A)
-    (af : S.Localize.τ)
-  : {xf : A.τ × (Localization.MonAlg _).τ
-       // af.val = ⟦(some xf.1, xf.2)⟧}
- := let x := classical.indefinite_description _ af.property
- in let f := classical.indefinite_description _ x.property
-    in { val := (x, f), property := f.property }
-
 
 end Sep

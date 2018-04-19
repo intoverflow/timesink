@@ -31,24 +31,16 @@ def non_vanishing.res {X : Alg.{ℓ}}
     (H : (Alg.PrimeSpec.Topology X).Open u' ⊆ (Alg.PrimeSpec.Topology X).Open u)
     (f : Localization.Mon (non_vanishing u))
   : Localization.Mon (non_vanishing u')
- := Localization.Mon.sec f
+ := Localization.Mon.subtype f
       (λ a Ha q F, Ha { val := q.val, property := H q.property } F)
 
-noncomputable def non_vanishing.to {X : Alg.{ℓ}}
+def non_vanishing.to {X : Alg.{ℓ}}
     {u : (Alg.PrimeSpec.Topology X).OI}
     (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u})
     (f : Localization.Mon (non_vanishing u))
   : Localization.Mon q.val.prime.Complement_JoinClosed.Alg.τ
- := { supp := list.map (λ (x : non_vanishing u)
-                        , { val := x.val, property := x.property q })
-                       f.supp
-    , e := λ a
-           , f.fn { val := a.val.val
-                  , property
-                      := λ q'
-                         , sorry
-                  }
-    }
+ := Localization.Mon.subtype f
+      (λ a Ha F, Ha { val := q.val, property := q.property } F)
 
 structure τ {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
   : Type.{ℓ}
@@ -61,8 +53,8 @@ structure τ {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
             (a : X.τ)
           , p.val ∈ (Alg.PrimeSpec.Topology X).Open u.val
           ∧ (∀ (q : {p // p ∈ (Alg.PrimeSpec.Topology X).Open u})
-              , (fn (expand_prime u q)).val
-                  = (X.localize_at q a (non_vanishing.to q ff)).val))
+              , fn (expand_prime u q)
+                  == X.localize_at q a (non_vanishing.to q ff) ))
 
 def τ.eq {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
     (s₁ s₂ : τ o)
@@ -74,9 +66,7 @@ def τ.eq {X : Alg.{ℓ}} (o : (Alg.PrimeSpec.Topology X).OI)
       cases s₂ with s₂ Hs₂,
       have E' : s₁ = s₂, from
         begin
-          apply funext, intro p,
-          apply PrimeLocalize.eq,
-          apply congr_arg _ (E p)
+          apply funext, intro p, apply E
         end,
       subst E'
     end
@@ -86,9 +76,7 @@ def res {X : Alg.{ℓ}}
     (H : (Alg.PrimeSpec.Topology X).Open u ⊆ (Alg.PrimeSpec.Topology X).Open o)
   : τ o → τ u
  := λ s
-    , { fn := λ p, cast
-                    begin simp [expand_prime] end
-                    (s.fn (expand_prime {val := u, property := H} p))
+    , { fn := λ p, cast begin trivial end (s.fn (expand_prime {val := u, property := H} p))
       , continuous
          := begin
               intro p,
@@ -180,10 +168,9 @@ noncomputable def glue {X : Alg}
             = res (Topology.Inter.Subset_r V₁.val _) (loc V₂))
   : τ U
  := { fn := λ p, let v := Topology.Cover.mem_fn Ucover p
-                 in cast
-                      begin trivial end
+                 in cast begin trivial end
                       ((loc { val := v.val, property := v.property.1 }).fn
-                            { val := p.val, property := v.property.2 })
+                           { val := p.val, property := v.property.2 })
     , continuous
        := begin
             intro p,
@@ -203,7 +190,7 @@ noncomputable def glue {X : Alg}
             existsi a,
             apply and.intro Q.1,
             intro q,
-            refine eq.trans _ (Q.2 q),
+            refine heq.trans _ (Q.2 q),
             simp,
             exact sorry -- is true
           end
@@ -298,67 +285,95 @@ def Alg.Struct (X : Alg.{ℓ})
             end
     }
 
-noncomputable def Alg.to_section (X : Alg.{ℓ}) (S : Set X)
-    (a₀ : S.Localize.τ)
+def Alg.to_section_on_rep {X : Alg.{ℓ}} {S : Set X}
+    (a₀ : (Localization.valid_local (JoinClosure.JoinClosed S)))
   : (X.Struct.Section (eq S)).τ
- := let af := S.local_represent a₀
- in let f' : ∀ (p : {p // p ∈ (Alg.PrimeSpec.Topology X).Open (eq S)})
-             , Localization.Mon p.val.prime.Complement_JoinClosed.Alg.τ
-           := begin
+ := let f' : ∀ (p : {p // p ∈ (Alg.PrimeSpec.Topology X).Open (eq S)})
+                , Localization.Mon p.val.prime.Complement_JoinClosed.Alg.τ
+              := begin
+                    intro p,
+                    refine Localization.Mon.subtype a₀.val.2 _,
+                    { intros x Sx,
+                      cases p with p Hp,
+                      cases Hp with p₀ Hp,
+                      cases Hp with Hp' Hp,
+                      cases Hp' with oi Hoi,
+                      cases Hoi with Hoi E,
+                      subst E, cases Hoi,
+                      induction Sx with x' F x₁ x₂ x₃ J S₁ S₂,
+                      { intro F', exact Hp (and.intro F F') },
+                      { intro F',
+                        cases p.prime _ _ _ J F' with H H,
+                        { exact ih_1 H },
+                        { exact ih_2 H }
+                      }
+                    }
+                  end
+    in { fn := λ p
+                , ⟦ { val := (a₀.val.1, f' p)
+                    , property
+                      := begin
+                            cases a₀.property with a₀' H,
+                            cases H with s₀' H,
+                            existsi a₀',
+                            existsi f' p,
+                            cases a₀ with a₀'' s₀'',
+                            cases H,
+                            apply Localization.equiv.refl
+                          end
+                      } ⟧
+        , continuous
+          := begin
                 intro p,
-                refine Localization.Mon.sec af.val.2 _,
-                { intros x Sx,
-                  cases p with p Hp,
-                  cases Hp with p₀ Hp,
-                  cases Hp with Hp' Hp,
-                  cases Hp' with oi Hoi,
+                refine exists.intro { val := eq S, property := λ x H, H } _,
+                simp,
+                refine exists.intro (Localization.Mon.subtype a₀.val.2 _) _,
+                { intros x Sx q,
+                  cases q with q Hq,
+                  cases Hq with q₀ Hq,
+                  cases Hq with Hq' Hq,
+                  cases Hq' with oi Hoi,
                   cases Hoi with Hoi E,
                   subst E, cases Hoi,
                   induction Sx with x' F x₁ x₂ x₃ J S₁ S₂,
-                  { intro F', exact Hp (and.intro F F') },
+                  { intro F', exact Hq (and.intro F F') },
                   { intro F',
-                    cases p.prime _ _ _ J F' with H H,
+                    cases q.prime _ _ _ J F' with H H,
                     { exact ih_1 H },
                     { exact ih_2 H }
                   }
-                }
+                },
+                cases a₀ with a₀ H₀,
+                cases H₀ with a₀' H₀,
+                cases H₀ with s₀' H₀,
+                cases H₀,
+                existsi a₀',
+                apply and.intro p.property,
+                intro q,
+                simp [Alg.localize_at],
+                --
+                exact sorry
               end
- in { fn := λ p
-            , { val := ⟦ (some af.val.1, f' p) ⟧
-                , property
-                    := exists.intro _
-                        (exists.intro _
-                          (quotient.sound (Localization.equiv.refl _)))
-                }
-    , continuous
-      := begin
-            intro p,
-            refine exists.intro { val := eq S, property := λ x H, H } _,
-            simp,
-            refine exists.intro (Localization.Mon.sec af.val.2 _) _,
-            { intros x Sx q,
-              cases q with q Hq,
-              cases Hq with q₀ Hq,
-              cases Hq with Hq' Hq,
-              cases Hq' with oi Hoi,
-              cases Hoi with Hoi E,
-              subst E, cases Hoi,
-              induction Sx with x' F x₁ x₂ x₃ J S₁ S₂,
-              { intro F', exact Hq (and.intro F F') },
-              { intro F',
-                cases q.prime _ _ _ J F' with H H,
-                { exact ih_1 H },
-                { exact ih_2 H }
-              }
-            },
-            existsi af.val.1,
-            apply and.intro p.property,
-            intro q,
-            simp [Alg.localize_at],
-            --
-            exact sorry
-          end
-    }
+        }
+
+def Alg.to_section (X : Alg.{ℓ}) (S : Set X)
+    (a₀ : S.Localize.τ)
+  : (X.Struct.Section (eq S)).τ
+ := quot.lift_on a₀ Alg.to_section_on_rep
+      begin
+        intros a b E,
+        cases a with a Ha,
+        cases a with a sa,
+        cases b with b Hb,
+        cases b with b sb,
+        cases E,
+        apply Structure.Section.τ.eq,
+        intro p,
+        simp [Alg.to_section_on_rep],
+        apply quot.sound,
+        constructor,
+        exact sorry -- is true
+      end
 
 def Alg.to_global_section (X : Alg.{ℓ})
     (a : X.τ)
