@@ -18,23 +18,55 @@ structure Mon (A : Type.{ℓ})
  := (supp : list A)
     (e : {a // a ∈ supp} → ℤ)
 
-def Mon.sec {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
-    (f : A → B) (g : B → A) (H : ∀ a, g (f a) = a)
-  : Mon A → Mon B
- := λ m, { supp := list.map f m.supp
-         , e := λ b, m.e { val := g b.val
-                         , property
-                           := begin
-                                cases b with b Hb,
-                                cases list.elem_map Hb with a Ha,
-                                cases Ha with E Ha,
-                                subst E,
-                                simp,
-                                rw H,
-                                exact Ha
-                              end
-                         }
-         }
+def Mon.sec {A : Type.{ℓ}} {P₁ P₂ : set A}
+    (m : Mon {a // P₁ a})
+    (H : ∀ a, P₁ a → P₂ a)
+  : Mon {a // P₂ a}
+ := { supp := list.map
+              (λ (a : {a // P₁ a})
+                , { val := a.val
+                  , property := H a.val a.property
+                  })
+              m.supp
+    , e := λ z, let Q₁ : P₁ z.val.val
+                      := begin
+                          cases m with ms me,
+                          cases z with z Hz,
+                          induction ms with s ss,
+                          { exact false.elim Hz },
+                          cases Hz with Hz Hz,
+                          { refine cast _ s.property,
+                            cases z with z Hz',
+                            injection Hz with E,
+                            subst E
+                          },
+                          { refine ih_1
+                                    (λ w, me { val := w.val, property := or.inr w.property })
+                                    Hz
+                          }
+                        end
+            in let z' : { a // P₁ a }
+                      := { val := z.val.val, property := Q₁ }
+            in let Q₂ : z' ∈ m.supp
+                      := begin
+                          cases m with ms me,
+                          cases z with z Hz,
+                          induction ms with s ss,
+                          { exact false.elim Hz },
+                          cases Hz with Hz Hz,
+                          { cases z with z Hz',
+                            cases s with s Hs,
+                            injection Hz with E,
+                            subst E,
+                            exact or.inl rfl
+                          },
+                          { apply or.inr,
+                            dsimp at ih_1,
+                            apply ih_1 (λ w, me { val := w.val, property := or.inr w.property }) _
+                          }
+                        end
+            in m.e { val := z', property := Q₂ }
+    }
 
 def Mon.zero (A : Type.{ℓ})
   : Mon A
@@ -47,12 +79,6 @@ def Mon.single {A : Type.{ℓ}} (a : A)
  := { supp := [a]
     , e := λ a', 1
     }
-
--- def Mon.opt_single {A : Alg.{ℓ}} (a : option A.τ)
---  := match a with
---       | some a' := Mon.single a'
---       | none := Mon.zero A
---     end
 
 noncomputable def Mon.fn {A : Type.{ℓ}}
     (M : Mon A) (a : A)
@@ -140,15 +166,6 @@ def add.zero_r {A : Type.{ℓ}}
       rw Mon.fn.zero,
       simp
     end
-
--- def Mon.equiv.opt_single_none {A : Alg.{ℓ}}
---     (s : Mon A)
---   : Mon.equiv s (Mon.opt_single none + s)
---  := begin
---       intro a,
---       rw add.linear,
---       exact sorry
---     end
 
 inductive Mon.simpl_step {A : Alg.{ℓ}}
     : Mon A.τ → Mon A.τ → Prop
@@ -796,7 +813,8 @@ def Set.AvoidingPrime {A : Alg.{ℓ}} (S : Set A)
 
 def Set.Localize {A : Alg.{ℓ}} (S : Set A)
   : Alg.{ℓ}
- := PrimeLocalize S.AvoidingPrime
+--  := PrimeLocalize S.AvoidingPrime
+ := Set.JoinClosed.Localize (JoinClosure.JoinClosed S)
 
 noncomputable def Set.local_represent {A : Alg.{ℓ}} (S : Set A)
     (af : S.Localize.τ)
