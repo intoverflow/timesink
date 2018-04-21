@@ -345,6 +345,17 @@ def Local.Contained {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
       existsi y, exact and.intro F Rxy
     end
 
+def Contained.Local {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}
+    (HS : r.Contained S)
+  : r.Local S.Compl
+ := begin
+      intros x H,
+      cases H with y H,
+      cases H with HSy Rxy,
+      intro F,
+      have Q := HS ⟨x, and.intro F Rxy⟩,
+      exact HSy Q
+    end
 
 -- The proper domain of the function induced by a relation
 def Rel.Dom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
