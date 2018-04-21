@@ -262,13 +262,13 @@ def Rel.increasing {A : Alg.{ℓ₁}} (r : Rel A A)
 
 
 -- Contained and local sets
-def Rel.Contained {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
+def Rel.Local {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
   : Prop
  := r.Fn S ⊆ S ∪ r.increasing
 
-def Rel.Contained.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
+def Rel.Local.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
     (r_trans : r.Trans)
-  : r.Contained (r.Fn S)
+  : r.Local (r.Fn S)
  := begin
       intros z H,
       cases H with y H,
@@ -281,10 +281,10 @@ def Rel.Contained.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
       apply r_trans, repeat { assumption }
     end
 
-def Rel.Contained.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
+def Rel.Local.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
     (r_trans : r.Trans)
-    (Hp : r.Contained p.Compl)
-  : r.Contained (r.FnInv p).Compl
+    (Hp : r.Local p.Compl)
+  : r.Local (r.FnInv p).Compl
  := begin
       intros y H, cases H with x H,
       cases H with H Rxy,
@@ -300,14 +300,14 @@ def Rel.Contained.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
     end
 
 
-def Rel.Local {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
+def Rel.Confined {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
   : Prop
  := r.FnInv p ⊆ p
 
-def Rel.Local.Fn {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
+def Rel.Confined.Fn {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
     (r_trans : r.Trans)
-    (HS : r.Local S.Compl)
-  : r.Local (r.Fn S).Compl
+    (HS : r.Confined S.Compl)
+  : r.Confined (r.Fn S).Compl
  := begin
       intros y H,
       cases H with z H,
@@ -321,10 +321,10 @@ def Rel.Local.Fn {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
       apply r_trans, repeat { assumption }
     end
 
-def Rel.Local.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
+def Rel.Confined.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
     (r_trans : r.Trans)
-    (Hp : r.Local p)
-  : r.Local (r.FnInv p)
+    (Hp : r.Confined p)
+  : r.Confined (r.FnInv p)
  := begin
       intros x H,
       cases H with y H,
@@ -336,9 +336,9 @@ def Rel.Local.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
       apply r_trans, repeat { assumption }
     end
 
-def Local.Contained {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
-    (Hp : r.Local p)
-  : r.Contained p.Compl
+def Confined.Local {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
+    (Hp : r.Confined p)
+  : r.Local p.Compl
  := begin
       intros y H,
       cases H with x H, cases H with Hpx Rxy,
@@ -347,10 +347,10 @@ def Local.Contained {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
       existsi y, exact and.intro F Rxy
     end
 
-def Contained.Local {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}
-    (HS₁ : r.Contained S)
+def Local.Confined {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}
+    (HS₁ : r.Local S)
     (HS₂ : r.increasing ⊆ S)
-  : r.Local S.Compl
+  : r.Confined S.Compl
  := begin
       intros x H,
       cases H with y H,
