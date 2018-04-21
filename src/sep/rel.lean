@@ -16,6 +16,24 @@ instance Rel_has_le {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} : has_le (Rel A�
  := { le := λ r₁ r₂, ∀ x, r₁ x ⊆ r₂ x
     }
 
+def Rel.Refl {A : Alg.{ℓ₁}} (r : Rel A A)
+  : Prop
+ := ∀ x, r x x
+
+def Rel.Trans {A : Alg.{ℓ₁}} (r : Rel A A)
+  : Prop
+ := ∀ x₁ x₂ x₃, r x₁ x₂ → r x₂ x₃ → r x₁ x₃
+
+structure OrdAlg : Type.{ℓ₁ + 1}
+ := (A : Alg.{ℓ₁})
+    (ord : Rel A A)
+    (refl : ord.Refl)
+    (trans : ord.Trans)
+
+instance OrdAlg_has_le {A : OrdAlg} : has_le A.A.τ
+ := { le := A.ord
+    }
+
 def Rel.WellDefined {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {x} {y₁ y₂}
       (R₁ : r x y₁)
@@ -236,6 +254,59 @@ def Rel.Im {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
 def Rel.FinIm {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : Prop
  := ∀ x, ∃ (ys : list A₂.τ), (∀ y, r x y ↔ y ∈ ys)
+
+-- Increasing and contained sets
+def Rel.increasing {A : Alg.{ℓ₁}} (r : Rel A A)
+  : Set A
+ := λ s, ∀ x y, A.join s x y → r x y
+
+def Rel.Contained {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
+  : Prop
+ := r.Fn S ⊆ S ∪ r.increasing
+
+def Rel.Contained.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
+    (r_trans : r.Trans)
+  : r.Contained (r.Fn S)
+ := begin
+      intros z H,
+      cases H with y H,
+      cases H with H Ryz,
+      cases H with x H,
+      cases H with HSx Rxy,
+      apply or.inl,
+      existsi x,
+      apply and.intro, assumption,
+      apply r_trans, repeat { assumption }
+    end
+
+def Rel.Contained.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
+    (r_trans : r.Trans)
+    (Hp : r.Contained p.Compl)
+  : r.Contained (r.FnInv p).Compl
+ := begin
+      intros y H, cases H with x H,
+      cases H with H Rxy,
+      apply or.inl,
+      intro F,
+      cases F with x' F,
+      cases F with Hx' Ryx',
+      apply H,
+      existsi x',
+      apply and.intro Hx',
+      apply r_trans,
+      repeat { assumption }
+    end
+
+def Rel.Confined.Contained {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
+    (Hp : r.FnInv p ⊆ p)
+  : r.Contained p.Compl
+ := begin
+      intros y H,
+      cases H with x H, cases H with Hpx Rxy,
+      apply or.inl, intro F,
+      refine Hpx (Hp _),
+      existsi y, exact and.intro F Rxy
+    end
 
 
 -- The proper domain of the function induced by a relation
