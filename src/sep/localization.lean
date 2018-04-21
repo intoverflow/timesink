@@ -364,17 +364,62 @@ def OrdAlg.Localize (A : OrdAlg.{ℓ}) (S : Set A.A)
     , trans := H
     }
 
-def OrdAlg.Localize' (A : OrdAlg.{ℓ}) (AUC : A.ord.UpClosed)
-    (p : Set A.A) (pPrime : p.Prime) (Hp : A.ord.Contained p.Compl)
+def UpClosed.JoinClosed.Localize (A : OrdAlg.{ℓ})
+    (AUC : A.ord.UpClosed)
+    (S : Set A.A) (HS : A.ord.Contained S) (SJC : S.JoinClosed)
   : OrdAlg.{ℓ}
- := OrdAlg.Localize A p.Compl
+ := OrdAlg.Localize A S
       begin
         apply Localization.locl.trans,
-        { apply Set.Prime.Complement_JoinClosed, assumption },
-        { exact or.inl (and.intro Hp @AUC) },
+        { apply SJC },
+        { exact or.inl (and.intro HS @AUC) },
         { apply A.refl },
         { apply A.trans }
       end
 
+def UpClosed.Prime.Localize (A : OrdAlg.{ℓ})
+    (AUC : A.ord.UpClosed)
+    (p : Set A.A) (Hp : A.ord.Contained p.Compl) (pPrime : p.Prime)
+  : OrdAlg.{ℓ}
+ := UpClosed.JoinClosed.Localize A @AUC p.Compl Hp
+      (Set.Prime.Complement_JoinClosed pPrime)
+
+
+def DownClosed.JoinClosed.Localize (A : OrdAlg.{ℓ})
+    (ADC : A.ord.DownClosed)
+    (S : Set A.A) (SJC : S.JoinClosed)
+  : OrdAlg.{ℓ}
+ := OrdAlg.Localize A S
+      begin
+        apply Localization.locl.trans,
+        { apply SJC },
+        { exact or.inr @ADC },
+        { apply A.refl },
+        { apply A.trans }
+      end
+
+def DownClosed.Prime.Localize (A : OrdAlg.{ℓ})
+    (ADC : A.ord.DownClosed)
+    (p : Set A.A) (pPrime : p.Prime)
+  : OrdAlg.{ℓ}
+ := DownClosed.JoinClosed.Localize A @ADC p.Compl
+      (Set.Prime.Complement_JoinClosed pPrime)
+
+
+def Flat.JoinClosed.Localize (A : OrdAlg.{ℓ})
+    (AUC : A.ord.UpClosed)
+    (ADC : A.ord.DownClosed)
+    (S : Set A.A) (HS : A.ord.Contained S) (SJC : S.JoinClosed)
+  : UpClosed.JoinClosed.Localize A @AUC S HS SJC
+      = DownClosed.JoinClosed.Localize A @ADC S SJC
+ := rfl
+
+def Flat.Prime.Localize (A : OrdAlg.{ℓ})
+    (AUC : A.ord.UpClosed)
+    (ADC : A.ord.DownClosed)
+    (p : Set A.A) (Hp : A.ord.Contained p.Compl) (pPrime : p.Prime)
+  : UpClosed.Prime.Localize A @AUC p Hp pPrime
+      = DownClosed.Prime.Localize A @ADC p pPrime
+ := rfl
 
 end Sep
