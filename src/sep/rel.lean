@@ -255,14 +255,16 @@ def Rel.FinIm {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : Prop
  := ∀ x, ∃ (ys : list A₂.τ), (∀ y, r x y ↔ y ∈ ys)
 
--- Increasing and contained sets
+-- Increasing elements
 def Rel.increasing {A : Alg.{ℓ₁}} (r : Rel A A)
   : Set A
  := λ s, ∀ x y, A.join s x y → r x y
 
+
+-- Contained and local sets
 def Rel.Contained {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
   : Prop
- := r.Fn S ⊆ S ∪ r.increasing
+ := r.Fn S ⊆ S
 
 def Rel.Contained.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
     (r_trans : r.Trans)
@@ -273,7 +275,6 @@ def Rel.Contained.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
       cases H with H Ryz,
       cases H with x H,
       cases H with HSx Rxy,
-      apply or.inl,
       existsi x,
       apply and.intro, assumption,
       apply r_trans, repeat { assumption }
@@ -286,7 +287,6 @@ def Rel.Contained.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
  := begin
       intros y H, cases H with x H,
       cases H with H Rxy,
-      apply or.inl,
       intro F,
       cases F with x' F,
       cases F with Hx' Ryx',
@@ -297,13 +297,50 @@ def Rel.Contained.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
       repeat { assumption }
     end
 
-def Rel.Confined.Contained {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
-    (Hp : r.FnInv p ⊆ p)
+
+def Rel.Local {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
+  : Prop
+ := r.FnInv p ⊆ p
+
+def Rel.Local.Fn {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
+    (r_trans : r.Trans)
+    (HS : r.Local S.Compl)
+  : r.Local (r.Fn S).Compl
+ := begin
+      intros y H,
+      cases H with z H,
+      cases H with H Ryz,
+      intro F,
+      cases F with x F,
+      cases F with HSx Rxy,
+      apply H,
+      existsi x,
+      apply and.intro HSx,
+      apply r_trans, repeat { assumption }
+    end
+
+def Rel.Local.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
+    (r_trans : r.Trans)
+    (Hp : r.Local p)
+  : r.Local (r.FnInv p)
+ := begin
+      intros x H,
+      cases H with y H,
+      cases H with H Rxy,
+      cases H with z H,
+      cases H with Hpz Ryz,
+      existsi z,
+      apply and.intro Hpz,
+      apply r_trans, repeat { assumption }
+    end
+
+def Rel.Local.Contained {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
+    (Hp : r.Local p)
   : r.Contained p.Compl
  := begin
       intros y H,
       cases H with x H, cases H with Hpx Rxy,
-      apply or.inl, intro F,
+      intro F,
       refine Hpx (Hp _),
       existsi y, exact and.intro F Rxy
     end

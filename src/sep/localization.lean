@@ -181,7 +181,7 @@ def locl.iff {A : Alg.{ℓ}} {S : Set A} {r : Rel A A}
 
 def locl.trans {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
     (SJC : S.JoinClosed)
-    (r_closed : (r.Contained S ∧ r.UpClosed) ∨ r.DownClosed)
+    (r_closed : (r.Fn S ⊆ S ∪ r.increasing ∧ r.UpClosed) ∨ r.DownClosed)
     (r_refl : r.Refl)
     (r_trans : r.Trans)
   : (locl S r).Trans
@@ -372,7 +372,7 @@ def UpClosed.JoinClosed.Localize (A : OrdAlg.{ℓ})
       begin
         apply Localization.locl.trans,
         { apply SJC },
-        { exact or.inl (and.intro HS @AUC) },
+        { exact or.inl (and.intro (λ w Hw, or.inl (HS Hw)) @AUC) },
         { apply A.refl },
         { apply A.trans }
       end
