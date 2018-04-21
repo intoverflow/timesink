@@ -264,7 +264,7 @@ def Rel.increasing {A : Alg.{ℓ₁}} (r : Rel A A)
 -- Contained and local sets
 def Rel.Contained {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
   : Prop
- := r.Fn S ⊆ S
+ := r.Fn S ⊆ S ∪ r.increasing
 
 def Rel.Contained.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
     (r_trans : r.Trans)
@@ -275,6 +275,7 @@ def Rel.Contained.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
       cases H with H Ryz,
       cases H with x H,
       cases H with HSx Rxy,
+      apply or.inl,
       existsi x,
       apply and.intro, assumption,
       apply r_trans, repeat { assumption }
@@ -287,6 +288,7 @@ def Rel.Contained.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
  := begin
       intros y H, cases H with x H,
       cases H with H Rxy,
+      apply or.inl,
       intro F,
       cases F with x' F,
       cases F with Hx' Ryx',
@@ -340,21 +342,24 @@ def Local.Contained {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
  := begin
       intros y H,
       cases H with x H, cases H with Hpx Rxy,
-      intro F,
+      apply or.inl, intro F,
       refine Hpx (Hp _),
       existsi y, exact and.intro F Rxy
     end
 
 def Contained.Local {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}
-    (HS : r.Contained S)
+    (HS₁ : r.Contained S)
+    (HS₂ : r.increasing ⊆ S)
   : r.Local S.Compl
  := begin
       intros x H,
       cases H with y H,
       cases H with HSy Rxy,
       intro F,
-      have Q := HS ⟨x, and.intro F Rxy⟩,
-      exact HSy Q
+      have Q := HS₁ ⟨x, and.intro F Rxy⟩,
+      cases Q with Q Q,
+      { exact HSy Q },
+      { exact HSy (HS₂ Q) }
     end
 
 -- The proper domain of the function induced by a relation
