@@ -334,7 +334,7 @@ def Rel.Local.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
       apply r_trans, repeat { assumption }
     end
 
-def Rel.Local.Contained {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
+def Local.Contained {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
     (Hp : r.Local p)
   : r.Contained p.Compl
  := begin

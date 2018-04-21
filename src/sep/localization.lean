@@ -379,9 +379,9 @@ def UpClosed.JoinClosed.Localize (A : OrdAlg.{ℓ})
 
 def UpClosed.Prime.Localize (A : OrdAlg.{ℓ})
     (AUC : A.ord.UpClosed)
-    (p : Set A.A) (Hp : A.ord.Contained p.Compl) (pPrime : p.Prime)
+    (p : Set A.A) (Hp : A.ord.Local p) (pPrime : p.Prime)
   : OrdAlg.{ℓ}
- := UpClosed.JoinClosed.Localize A @AUC p.Compl Hp
+ := UpClosed.JoinClosed.Localize A @AUC _ (Local.Contained Hp)
       (Set.Prime.Complement_JoinClosed pPrime)
 
 
@@ -402,7 +402,7 @@ def DownClosed.Prime.Localize (A : OrdAlg.{ℓ})
     (ADC : A.ord.DownClosed)
     (p : Set A.A) (pPrime : p.Prime)
   : OrdAlg.{ℓ}
- := DownClosed.JoinClosed.Localize A @ADC p.Compl
+ := DownClosed.JoinClosed.Localize A @ADC _
       (Set.Prime.Complement_JoinClosed pPrime)
 
 
@@ -417,7 +417,7 @@ def Flat.JoinClosed.Localize (A : OrdAlg.{ℓ})
 def Flat.Prime.Localize (A : OrdAlg.{ℓ})
     (AUC : A.ord.UpClosed)
     (ADC : A.ord.DownClosed)
-    (p : Set A.A) (Hp : A.ord.Contained p.Compl) (pPrime : p.Prime)
+    (p : Set A.A) (Hp : A.ord.Local p) (pPrime : p.Prime)
   : UpClosed.Prime.Localize A @AUC p Hp pPrime
       = DownClosed.Prime.Localize A @ADC p pPrime
  := rfl
