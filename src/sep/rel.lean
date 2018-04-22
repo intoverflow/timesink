@@ -24,16 +24,6 @@ def Rel.Trans {A : Alg.{ℓ₁}} (r : Rel A A)
   : Prop
  := ∀ x₁ x₂ x₃, r x₁ x₂ → r x₂ x₃ → r x₁ x₃
 
-structure OrdAlg : Type.{ℓ₁ + 1}
- := (A : Alg.{ℓ₁})
-    (ord : Rel A A)
-    (refl : ord.Refl)
-    (trans : ord.Trans)
-
-instance OrdAlg_has_le {A : OrdAlg} : has_le A.A.τ
- := { le := A.ord
-    }
-
 def Rel.WellDefined {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {x} {y₁ y₂}
       (R₁ : r x y₁)

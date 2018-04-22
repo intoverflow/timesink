@@ -3,6 +3,7 @@
  -/
 import .basic
 import .rel
+import .ordalg
 import ..top.basic
 import ..extralib
 
@@ -10,12 +11,12 @@ namespace Sep
 universes ℓ ℓ₁ ℓ₂
 open Top
 
-structure Alg.PrimeSpec (A : Alg.{ℓ}) : Type.{ℓ}
- := (set : Set A)
+structure OrdAlg.PrimeSpec (A : OrdAlg.{ℓ}) : Type.{ℓ}
+ := (set : Set A.alg)
     (prime : set.Prime)
-    (integral : set.Integral)
+    (locl : A.ord.Local set.Compl)
 
-def PrimeSpec.eq {A : Alg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
+def PrimeSpec.eq {A : OrdAlg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
   : p₁.set = p₂.set → p₁ = p₂
  := begin
       intro E,
@@ -25,24 +26,24 @@ def PrimeSpec.eq {A : Alg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
       subst E
     end
 
-def PrimePres.InducedMap {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} {r : Rel X Y}
-    (rPP : r.PrimePres)
-    (rI : r.IntegralPres)
+def PrimePres.InducedMap {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} {r : OrdRel X Y}
+    (rPP : r.rel.PrimePres)
+    (rL : r.LocalPres)
   : Y.PrimeSpec → X.PrimeSpec
- := λ p, { set := r.FnInv p.set
+ := λ p, { set := r.rel.FnInv p.set
          , prime := Rel.PrimePres_iff.2 @rPP p.prime
-         , integral := rI p.integral
+         , locl := rL _ p.locl
          }
 
-def PrimeSpec.BasicOpen {A : Alg.{ℓ}} (S : Set A) : set A.PrimeSpec
+def PrimeSpec.BasicOpen {A : OrdAlg.{ℓ}} (S : Set A.alg) : set A.PrimeSpec
   := λ p, ∀ {s}, ¬ s ∈ S ∩ p.set
 
-def PrimePres.InducedMap.BasicPreImage {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
-    (rPP : r.PrimePres)
-    (rI : r.IntegralPres)
-    (xs : Set X)
-  : PreImage (PrimePres.InducedMap @rPP @rI) (PrimeSpec.BasicOpen xs)
-      = PrimeSpec.BasicOpen (r.Fn xs)
+def PrimePres.InducedMap.BasicPreImage {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} (r : OrdRel X Y)
+    (rPP : r.rel.PrimePres)
+    (rL : r.LocalPres)
+    (xs : Set X.alg)
+  : PreImage (PrimePres.InducedMap @rPP rL) (PrimeSpec.BasicOpen xs)
+      = PrimeSpec.BasicOpen (r.rel.Fn xs)
  := begin
       apply funext, intro p,
       apply iff.to_eq, apply iff.intro,
@@ -61,7 +62,7 @@ def PrimePres.InducedMap.BasicPreImage {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r 
       }
     end
 
-def PrimeSpec.BasicOpen.intersection {A : Alg.{ℓ}} (S₁ S₂ : Set A)
+def PrimeSpec.BasicOpen.intersection {A : OrdAlg.{ℓ}} (S₁ S₂ : Set A.alg)
   : PrimeSpec.BasicOpen S₁ ∩ PrimeSpec.BasicOpen S₂ = PrimeSpec.BasicOpen (S₁ ∪ S₂)
  := begin
       apply funext, intro p,
@@ -77,7 +78,7 @@ def PrimeSpec.BasicOpen.intersection {A : Alg.{ℓ}} (S₁ S₂ : Set A)
       }
     end
 
-def PrimeSpec.BasicOpen.intersection₀ {A : Alg.{ℓ}} (S : set (Set A))
+def PrimeSpec.BasicOpen.intersection₀ {A : OrdAlg.{ℓ}} (S : set (Set A.alg))
   : set.sInter (PrimeSpec.BasicOpen <$> S)
       = PrimeSpec.BasicOpen (set.sUnion S)
  := begin
@@ -101,8 +102,8 @@ def PrimeSpec.BasicOpen.intersection₀ {A : Alg.{ℓ}} (S : set (Set A))
       }
     end
 
-def Alg.PrimeSpec.OpenBasis (A : Alg.{ℓ}) : OpenBasis A.PrimeSpec
- := { OI := Set A
+def Alg.PrimeSpec.OpenBasis (A : OrdAlg.{ℓ}) : OpenBasis A.PrimeSpec
+ := { OI := Set A.alg
     , Open := PrimeSpec.BasicOpen
     , Cover := begin
                 apply funext, intro p,
@@ -150,25 +151,25 @@ def Alg.PrimeSpec.OpenBasis (A : Alg.{ℓ}) : OpenBasis A.PrimeSpec
                 end
     }
 
-def Alg.PrimeSpec.Topology (A : Alg.{ℓ}) : Topology A.PrimeSpec
+def Alg.PrimeSpec.Topology (A : OrdAlg.{ℓ}) : Topology A.PrimeSpec
   := (Alg.PrimeSpec.OpenBasis A).Topology
 
-def PrimePres.InducedMap.Continuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : Rel X Y)
-    (rPP : r.PrimePres)
-    (rI : r.IntegralPres)
+def PrimePres.InducedMap.Continuous {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} (r : OrdRel X Y)
+    (rPP : r.rel.PrimePres)
+    (rL : r.LocalPres)
   : Continuous (Alg.PrimeSpec.Topology Y) (Alg.PrimeSpec.Topology X)
-               (PrimePres.InducedMap @rPP @rI)
+               (PrimePres.InducedMap @rPP rL)
  := begin
       let c : (Alg.PrimeSpec.OpenBasis X).OI → (Alg.PrimeSpec.Topology Y).OI
-           := λ x y, y = r.Fn x,
+           := λ x y, y = r.rel.Fn x,
       apply OpenBasis.Continuous c,
       intro oix,
       apply funext, intro p,
       apply iff.to_eq, apply iff.intro,
       { intro H,
-        existsi PreImage (PrimePres.InducedMap @rPP @rI) (PrimeSpec.BasicOpen oix),
+        existsi PreImage (PrimePres.InducedMap @rPP rL) (PrimeSpec.BasicOpen oix),
         refine exists.intro _ _,
-        { existsi r.Fn oix,
+        { existsi r.rel.Fn oix,
           apply and.intro rfl,
           rw PrimePres.InducedMap.BasicPreImage,
           trivial
@@ -182,7 +183,7 @@ def PrimePres.InducedMap.Continuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : R
         cases H with H Hpu,
         cases H with V H,
         cases H with E₁ E₂,
-        have E : V = r.Fn oix := E₁, subst E, clear E₁,
+        have E : V = r.rel.Fn oix := E₁, subst E, clear E₁,
         have E := E₂.symm, subst E, clear E₂,
         intros x Hx,
         cases Hx with Hx H,
@@ -335,12 +336,12 @@ def PrimePres.InducedMap.Continuous {X : Alg.{ℓ₁}} {Y : Alg.{ℓ₂}} (r : R
 -- Here we allow C to be an arbitrary set, but in practice the only
 -- sets worth considering are those which are intersections of prime
 -- sets.
-def PrimeSpec.BasicClosed {A : Alg.{ℓ}} (C : Set A) : set A.PrimeSpec
+def PrimeSpec.BasicClosed {A : OrdAlg.{ℓ}} (C : Set A.alg) : set A.PrimeSpec
   := λ p, C ⊆ p.set
 
 -- When S is finite, BasicOpen S is an open set in the sense that
 -- it is a complement of a finite union of closed sets.
-def PrimeSpec.BasicOpen.IsOpen {A : Alg.{ℓ}} (S : Set A)
+def PrimeSpec.BasicOpen.IsOpen {A : OrdAlg.{ℓ}} (S : Set A.alg)
   : PrimeSpec.BasicOpen S
       = set.compl (set.sUnion ((λ s, PrimeSpec.BasicClosed (eq s)) <$> S))
  := begin
@@ -370,7 +371,7 @@ def PrimeSpec.BasicOpen.IsOpen {A : Alg.{ℓ}} (S : Set A)
 
 
 -- BasicClosed I really is a closed set.
-def PrimeSpec.BasicClosed.IsClosed {A : Alg.{ℓ}} (I : Set A)
+def PrimeSpec.BasicClosed.IsClosed {A : OrdAlg.{ℓ}} (I : Set A.alg)
   : PrimeSpec.BasicClosed I =
       set.compl (set.sUnion ((λ i, PrimeSpec.BasicOpen (eq i)) <$> I))
  := begin
@@ -399,7 +400,7 @@ def PrimeSpec.BasicClosed.IsClosed {A : Alg.{ℓ}} (I : Set A)
       }
     end
 
-def PrimeSpec.BasicClosed.intersection {A : Alg.{ℓ}} (I₁ I₂ : Set A)
+def PrimeSpec.BasicClosed.intersection {A : OrdAlg.{ℓ}} (I₁ I₂ : Set A.alg)
   : PrimeSpec.BasicClosed (I₁ ∪ I₂) = PrimeSpec.BasicClosed I₁ ∩ PrimeSpec.BasicClosed I₂
  := begin
       apply funext, intro p,
@@ -414,7 +415,7 @@ def PrimeSpec.BasicClosed.intersection {A : Alg.{ℓ}} (I₁ I₂ : Set A)
       }
     end
 
-def PrimeSpec.BasicClosed.union {A : Alg.{ℓ}} (I₁ I₂ : Set A)
+def PrimeSpec.BasicClosed.union {A : OrdAlg.{ℓ}} (I₁ I₂ : Set A.alg)
   (I₁ideal : I₁.Ideal)
   (I₂ideal : I₂.Ideal)
   : PrimeSpec.BasicClosed I₁ ∪ PrimeSpec.BasicClosed I₂
@@ -439,13 +440,13 @@ def PrimeSpec.BasicClosed.union {A : Alg.{ℓ}} (I₁ I₂ : Set A)
         have Z : ¬ ((∃ x₁, x₁ ∈ set.diff I₁ p.set) ∧ (∃ x₂, x₂ ∈ set.diff I₂ p.set)), from
           begin
             intro Q, cases Q with Q₁ Q₂, cases Q₁ with x₁ Q₁, cases Q₂ with x₂ Q₂,
-            cases classical.em (∃ z, A.join x₁ x₂ z) with Jx Jx,
+            cases classical.em (∃ z, A.alg.join x₁ x₂ z) with Jx Jx,
             { cases Jx with z Jx,
               have Hz : z ∈ p.set, from
                 begin
                   apply H₁, apply and.intro,
                   { apply I₁ideal Q₁.1 Jx },
-                  { apply I₂ideal Q₂.1 (A.comm Jx) }
+                  { apply I₂ideal Q₂.1 (A.alg.comm Jx) }
                 end,
               cases p.prime _ _ _ Jx Hz with Z Z,
               { apply Q₁.2, assumption },
@@ -458,7 +459,7 @@ def PrimeSpec.BasicClosed.union {A : Alg.{ℓ}} (I₁ I₂ : Set A)
               },
               { apply Q₂.2, apply H₂, apply and.intro Q₂.1,
                 existsi x₁, apply and.intro Q₁.1, intros z Jz,
-                apply Jx, existsi z, exact (A.comm Jz)
+                apply Jx, existsi z, exact (A.alg.comm Jz)
               }
             }
           end,
