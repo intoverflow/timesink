@@ -251,7 +251,7 @@ def Rel.increasing {A : Alg.{ℓ₁}} (r : Rel A A)
  := λ s, ∀ x y, A.join s x y → r x y
 
 
--- Contained and local sets
+-- Local and confined sets
 def Rel.Local {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
   : Prop
  := r.Fn S ⊆ S ∪ r.increasing

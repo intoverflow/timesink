@@ -14,7 +14,7 @@ open Top
 structure OrdAlg.PrimeSpec (A : OrdAlg.{ℓ}) : Type.{ℓ}
  := (set : Set A.alg)
     (prime : set.Prime)
-    (locl : A.ord.Local set.Compl)
+    (locl : A.ord.Confined set)
 
 def PrimeSpec.eq {A : OrdAlg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
   : p₁.set = p₂.set → p₁ = p₂
@@ -28,11 +28,10 @@ def PrimeSpec.eq {A : OrdAlg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
 
 def PrimePres.InducedMap {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} {r : OrdRel X Y}
     (rPP : r.rel.PrimePres)
-    (rL : r.LocalPres)
   : Y.PrimeSpec → X.PrimeSpec
  := λ p, { set := r.rel.FnInv p.set
          , prime := Rel.PrimePres_iff.2 @rPP p.prime
-         , locl := rL _ p.locl
+         , locl := r.ConfinedPres p.locl
          }
 
 def PrimeSpec.BasicOpen {A : OrdAlg.{ℓ}} (S : Set A.alg) : set A.PrimeSpec
@@ -40,9 +39,8 @@ def PrimeSpec.BasicOpen {A : OrdAlg.{ℓ}} (S : Set A.alg) : set A.PrimeSpec
 
 def PrimePres.InducedMap.BasicPreImage {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} (r : OrdRel X Y)
     (rPP : r.rel.PrimePres)
-    (rL : r.LocalPres)
     (xs : Set X.alg)
-  : PreImage (PrimePres.InducedMap @rPP rL) (PrimeSpec.BasicOpen xs)
+  : PreImage (PrimePres.InducedMap @rPP) (PrimeSpec.BasicOpen xs)
       = PrimeSpec.BasicOpen (r.rel.Fn xs)
  := begin
       apply funext, intro p,
@@ -156,9 +154,8 @@ def Alg.PrimeSpec.Topology (A : OrdAlg.{ℓ}) : Topology A.PrimeSpec
 
 def PrimePres.InducedMap.Continuous {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} (r : OrdRel X Y)
     (rPP : r.rel.PrimePres)
-    (rL : r.LocalPres)
   : Continuous (Alg.PrimeSpec.Topology Y) (Alg.PrimeSpec.Topology X)
-               (PrimePres.InducedMap @rPP rL)
+               (PrimePres.InducedMap @rPP)
  := begin
       let c : (Alg.PrimeSpec.OpenBasis X).OI → (Alg.PrimeSpec.Topology Y).OI
            := λ x y, y = r.rel.Fn x,
@@ -167,7 +164,7 @@ def PrimePres.InducedMap.Continuous {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} 
       apply funext, intro p,
       apply iff.to_eq, apply iff.intro,
       { intro H,
-        existsi PreImage (PrimePres.InducedMap @rPP rL) (PrimeSpec.BasicOpen oix),
+        existsi PreImage (PrimePres.InducedMap @rPP) (PrimeSpec.BasicOpen oix),
         refine exists.intro _ _,
         { existsi r.rel.Fn oix,
           apply and.intro rfl,
