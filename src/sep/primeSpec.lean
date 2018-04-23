@@ -14,7 +14,7 @@ open Top
 structure OrdAlg.PrimeSpec (A : OrdAlg.{ℓ}) : Type.{ℓ}
  := (set : Set A.alg)
     (prime : set.Prime)
-    (locl : A.ord.Confined set)
+    (locl : A.ord.FnInv set = set)
 
 def PrimeSpec.eq {A : OrdAlg.{ℓ}} (p₁ p₂ : A.PrimeSpec)
   : p₁.set = p₂.set → p₁ = p₂
@@ -31,7 +31,37 @@ def PrimePres.InducedMap {X : OrdAlg.{ℓ₁}} {Y : OrdAlg.{ℓ₂}} {r : OrdRel
   : Y.PrimeSpec → X.PrimeSpec
  := λ p, { set := r.rel.FnInv p.set
          , prime := Rel.PrimePres_iff.2 @rPP p.prime
-         , locl := r.ConfinedPres p.locl
+         , locl := begin
+                    apply funext, intro x₁,
+                    apply iff.to_eq,
+                    apply iff.intro,
+                    { intro H,
+                      cases H with x₂ H,
+                      cases H with H Lx,
+                      cases H with y₂ H,
+                      cases H with Hpy₂ R₂,
+                      have Q := r.incr _ _ _ R₂ Lx,
+                      cases Q with y₁ Q,
+                      cases Q with R₁ Ly,
+                      have Hpy₁ : y₁ ∈ p.set, from
+                        begin
+                          rw p.locl.symm,
+                          existsi y₂,
+                          exact and.intro Hpy₂ Ly
+                        end,
+                      existsi y₁,
+                      exact and.intro Hpy₁ R₁
+                    },
+                    { intro H,
+                      cases H with y₁ H,
+                      cases H with Hpy₁ R₁,
+                      existsi x₁,
+                      refine and.intro _ (X.refl _),
+                      existsi y₁,
+                      exact and.intro Hpy₁ R₁
+                    }
+                   end
+                   --r.ConfinedPres p.locl
          }
 
 def PrimeSpec.BasicOpen {A : OrdAlg.{ℓ}} (S : Set A.alg) : set A.PrimeSpec
@@ -488,11 +518,7 @@ def PrimeSpec.BasicClosed.union {A : OrdAlg.{ℓ}} (I₁ I₂ : Set A.alg)
 def OrdAlg.ZeroPt (A : OrdAlg.{ℓ}) : A.PrimeSpec
  := { set := ∅
     , prime := EmptyPrime _
-    , locl := begin
-                intros x H, cases H with y H,
-                cases H with F Rxy,
-                cases F
-              end
+    , locl := Rel.FnInv.Empty _
     }
 
 def ZeroPt.BasisEverywhere {X : OrdAlg.{ℓ}} {S : Set X.alg}
@@ -518,7 +544,7 @@ def ZeroPt.Everywhere {X : OrdAlg.{ℓ}} {S : Set X.alg}
 
 def OrdAlg.BigPt (A : OrdAlg.{ℓ}) (AUC : A.ord.UpClosed)
     (S : Set A.alg)
-    (HS : A.ord.Confined (JoinClosure S).Compl)
+    (HS : A.ord.FnInv (JoinClosure S).Compl = (JoinClosure S).Compl)
   : A.PrimeSpec
  := { set := (JoinClosure S).Compl
     , prime := begin
@@ -529,7 +555,7 @@ def OrdAlg.BigPt (A : OrdAlg.{ℓ}) (AUC : A.ord.UpClosed)
     }
 
 def BigPt.In {X : OrdAlg.{ℓ}} {XUC : X.ord.UpClosed} {S : Set X.alg}
-    { HS : X.ord.Confined (JoinClosure S).Compl }
+    {HS : X.ord.FnInv (JoinClosure S).Compl = (JoinClosure S).Compl}
   : X.BigPt @XUC S HS ∈ (OrdAlg.PrimeSpec.Topology X).Open (eq S)
  := begin
       existsi (OrdAlg.PrimeSpec.OpenBasis X).Open S,

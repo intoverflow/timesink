@@ -235,6 +235,18 @@ def Rel.FnInv.subset {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A
         }
       end
 
+def Rel.FnInv.Empty {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
+  : r.FnInv ∅ = ∅
+ := begin
+      apply funext, intro x,
+      apply iff.to_eq, apply iff.intro,
+      { intro H,
+        cases H with y H,
+        cases H with F Rxy,
+        cases F
+      },
+      { intro H, cases H }
+    end
 
 -- The image of the function induced by a relation
 def Rel.Im {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
@@ -1331,5 +1343,53 @@ def Local.Confined {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}
       { exact HSy Q },
       { exact HSy (HS₂ Q) }
     end
+
+
+def Rel.LocallyUpClosed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} (r: Rel A B) (S : Set A)
+  : Prop
+ := ∀ s x₂ x₃ y₃
+      (Hs : s ∈ S)
+      (J : A.join s x₂ x₃)
+      (R₃ : r x₃ y₃)
+    , ∃ n₁ n₂, B.join n₁ n₂ y₃ ∧ r s n₁ ∧ r x₂ n₂
+
+def Rel.LocallyDownClosed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} (r: Rel A B) (S : Set B)
+  : Prop
+ := ∀ s x₂ x₃ m₁ m₂
+      (Hs : s ∈ S)
+      (J : B.join s x₂ x₃)
+      (R₁ : r m₁ s)
+      (R₂ : r m₂ x₂)
+    , ∃ m₃, r m₃ x₃ ∧ A.join m₁ m₂ m₃
+
+def UpClosed.LocallyUpClosed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A B}
+    (rUC : r.UpClosed) (S : Set A)
+  : r.LocallyUpClosed S
+ := begin
+      intros s x₂ x₃ y₃ Hs J R₃,
+      exact rUC J R₃
+    end
+
+def DownClosed.LocallyDownClosed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A B}
+    (rDC : r.DownClosed) (S : Set B)
+  : r.LocallyDownClosed S
+ := begin
+      intros s x₂ x₃ m₁ m₂ Hs J R₁ R₂,
+      exact rDC R₁ R₂ J
+    end
+
+def Rel.LocallyClosed {A : Alg.{ℓ₁}} (r: Rel A A) (S : Set A)
+  : Prop
+ := r.LocallyUpClosed S ∨ r.LocallyDownClosed S
+
+def UpClosed.LocallyClosed {A : Alg.{ℓ₁}} {r: Rel A A}
+    (rUC : r.UpClosed) (S : Set A)
+  : r.LocallyClosed S
+ := or.inl (UpClosed.LocallyUpClosed @rUC S)
+
+def DownClosed.LocallyClosed {A : Alg.{ℓ₁}} {r: Rel A A}
+    (rDC : r.DownClosed) (S : Set A)
+  : r.LocallyClosed S
+ := or.inr (DownClosed.LocallyDownClosed @rDC S)
 
 end Sep

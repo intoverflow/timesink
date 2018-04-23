@@ -18,11 +18,25 @@ def expand_prime {X : OrdAlg.{ℓ}}
     , property := u.property q.property
     }
 
+def local_helper {X : OrdAlg.{ℓ}} (S : Set X.alg)
+  (HS : Rel.FnInv (X.ord) S.Compl = S.Compl)
+  : X.ord.Local S
+ := begin
+      apply Confined.Local,
+      intros x Hx,
+      rw HS.symm,
+      exact Hx
+    end
+
 def PrimeAlg {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
     (p : X.PrimeSpec)
   : OrdAlg.{ℓ}
  := UpClosed.Prime.Localize X @XUC p.set
-              (Confined.Local (cast begin rw Set.ComplCompl end p.locl))
+              begin
+                apply local_helper,
+                rw Set.ComplCompl,
+                exact p.locl
+              end
               p.prime
 
 structure Sec {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
@@ -181,9 +195,9 @@ def OrdAlg.to_section.surj {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
     end
 
 def OrdAlg.ToSection {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
-    (S : Set X.alg) (HS : X.ord.Local S) (SJC : S.JoinClosed)
+    (S : Set X.alg) (HS : X.ord.FnInv S.Compl = S.Compl) (SJC : S.JoinClosed)
     : OrdRel
-        (UpClosed.JoinClosed.Localize X @XUC S HS SJC)
+        (UpClosed.JoinClosed.Localize X @XUC S (local_helper _ HS) SJC)
         ((OrdAlg.Struct X @XUC).Section (eq S))
  := { rel := λ x y, y = OrdAlg.to_section @XUC S x
     , incr := λ x₁ x₂ y₂ E L₁₂
@@ -209,10 +223,10 @@ def OrdAlg.ToSection {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
 
 def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
     (S : Set X.alg) (SJC : S.JoinClosed)
-    (HS : X.ord.Confined S.Compl)
+    (HS : X.ord.FnInv S.Compl = S.Compl)
     : OrdRel
         ((OrdAlg.Struct X @XUC).Section (eq S))
-        (UpClosed.JoinClosed.Localize X @XUC S (Confined.Local HS) SJC)
+        (UpClosed.JoinClosed.Localize X @XUC S (local_helper _ HS) SJC)
  := { rel := λ x y, x = OrdAlg.to_section @XUC S y
     , incr := λ v₁ v₂ w₂ E L₁₂
               , begin
@@ -222,7 +236,7 @@ def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
                   existsi w₁,
                   apply and.intro Hw₁.symm,
                   subst Hw₁,
-                  have HS' : Rel.Confined (X.ord) (Set.Compl (JoinClosure S)), from
+                  have HS' : X.ord.FnInv (JoinClosure S).Compl = (JoinClosure S).Compl, from
                     begin
                       rw JoinClosed.JoinClosure @SJC,
                       exact HS

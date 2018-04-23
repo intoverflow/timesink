@@ -265,6 +265,38 @@ def locl.flat_trans {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
       }
     end
 
+def locl.LocallyUpClosed {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
+    {L : Set A}
+    (HL : r.Fn L ⊆ L)
+    (rUC : r.LocallyUpClosed L)
+    (r_trans : r.Trans)
+  : (locl S r).LocallyUpClosed L
+ := begin
+      intros x₁ x₂ x₃ y₃ Hx Jx L₃,
+      cases L₃ with _ _ R  _ x y _ s Hs Rx Ry J ; clear L₃,
+      { have Q := rUC _ _ _ _ Hx Jx R,
+        cases Q with n₁ Q, cases Q with n₂ Q,
+        cases Q with J' Q, cases Q with R₁ R₂,
+        existsi n₁, existsi n₂,
+        apply and.intro J',
+        apply and.intro,
+        repeat { apply locl.base, assumption }
+      },
+      { have Q := rUC _ _ _ _ Hx Jx Rx,
+        cases Q with x₁' Q, cases Q with x₂' Q,
+        cases Q with Jx' Q, cases Q with Rx₁' Rx₂',
+        apply A.assoc Jx' (A.comm J), intro a₁,
+        have Q := rUC _ _ _ _ (HL ⟨x₁, and.intro Hx Rx₁'⟩) a₁.J₂ Ry,
+        cases Q with n₁ Q, cases Q with n₂ Q,
+        cases Q with Jn Q, cases Q with Rn₁ Rn₂,
+        existsi n₁, existsi n₂,
+        apply and.intro Jn,
+        apply and.intro,
+        { apply locl.base, apply r_trans, repeat { assumption } },
+        { exact locl.join Hs Rx₂' Rn₂ (A.comm a₁.J₁) }
+      }
+    end
+
 def locl.UpClosed {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
     (rUC : r.UpClosed)
     (r_trans : r.Trans)
@@ -292,6 +324,82 @@ def locl.UpClosed {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
         apply and.intro,
         { apply locl.base, apply r_trans, repeat { assumption } },
         { exact locl.join Hs Rx₂' Rn₂ (A.comm a₁.J₁) }
+      }
+    end
+
+def locl.LocallyDownClosed {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
+    (SJC : S.JoinClosed)
+    {L : Set A}
+    (Lprime : L.Prime)
+    (HL : r.FnInv L ⊆ L)
+    (HLS : S ∩ L = ∅)
+    (rDC : r.LocallyDownClosed L)
+    (r_refl : r.Refl)
+    (r_trans : r.Trans)
+  : (locl S r).LocallyDownClosed L
+ := begin
+      intros p₁ p₂ q₁ q₂ q₃ Hp₁ Jb L₁ L₂,
+      cases L₁ with _ _ R₁  _ x₁ y₁ _ s₁ Hs₁ Rx₁ Ry₁ J₁ ; clear L₁,
+      { cases L₂ with _ _ R₂  _ x₂ y₂ _ s₂ Hs₂ Rx₂ Ry₂ J₂ ; clear L₂,
+        { have Q := rDC _ _ _ _ _ Hp₁ Jb R₁ R₂,
+          cases Q with n₃ Q, cases Q with R₃ Jx,
+          existsi n₃,
+          refine and.intro _ Jx,
+          apply locl.base,
+          assumption
+        },
+        { have Q := rDC _ _ _ _ _ Hp₁ Jb R₁ Ry₂,
+          cases Q with b₃' Q,
+          cases Q with Rb₃' Jb₃',
+          apply A.assoc J₂ (A.comm Jb₃'), intro a,
+          have Q := rDC _ _ _ _ _ (HL ⟨p₁, and.intro Hp₁ R₁⟩) (A.comm a.J₁) (r_refl _) Rx₂,
+          cases Q with n₃ Q, cases Q with Rn₃ Jn₃,
+          existsi n₃,
+          refine and.intro _ Jn₃,
+          exact locl.join Hs₂ Rn₃ Rb₃' a.J₂
+        }
+      },
+      { cases L₂ with _ _ R₂  _ x₂ y₂ _ s₂ Hs₂ Rx₂ Ry₂ J₂ ; clear L₂,
+        { have Q := rDC _ _ _ _ _ Hp₁ Jb Ry₁ R₂,
+          cases Q with b₃' Q,
+          cases Q with Rb₃' Jb₃',
+          have Q := Lprime _ _ _ J₁ (HL ⟨p₁, and.intro Hp₁ Ry₁⟩),
+          cases Q with HLs₁ HLx₁,
+          { have Q : s₁ ∈ S ∩ L := and.intro Hs₁ HLs₁,
+            rw HLS at Q,
+            cases Q
+          },
+          { apply A.assoc J₁ Jb₃', intro a,
+            have Q := rDC _ _ _ _ _ HLx₁ a.J₁ Rx₁ (r_refl _),
+            cases Q with n₃ Q, cases Q with Rn₃ Jn₃,
+            existsi n₃,
+            refine and.intro _ Jn₃,
+            exact locl.join Hs₁ Rn₃ Rb₃' a.J₂
+          }
+        },
+        { have Q := rDC _ _ _ _ _ Hp₁ Jb Ry₁ Ry₂,
+          cases Q with b₃' Q, cases Q with Rb₃' Jb₃',
+          have Q := Lprime _ _ _ J₁ (HL ⟨p₁, and.intro Hp₁ Ry₁⟩),
+          cases Q with HLs₁ HLx₁,
+          { have Q : s₁ ∈ S ∩ L := and.intro Hs₁ HLs₁,
+            rw HLS at Q,
+            cases Q
+          },
+          { apply A.assoc J₁ Jb₃', intro a₁,
+            apply A.assoc J₂ (A.comm a₁.J₁), intro a₂,
+            have Q := rDC _ _ _ _ _ HLx₁ (A.comm a₂.J₁) Rx₁ Rx₂, clear Rx₁ Rx₂,
+            cases Q with n₃ Q, cases Q with Rn₃ J,
+            existsi n₃,
+            refine and.intro _ J,
+            apply A.assoc (A.comm a₂.J₂) (A.comm a₁.J₂), intro s,
+            have Hs : s.x ∈ S, from
+              begin
+                apply SJC _ _ _ (A.comm s.J₁),
+                repeat { assumption }
+              end,
+            exact locl.join Hs Rn₃ Rb₃' (A.comm s.J₂)
+          }
+        }
       }
     end
 
