@@ -1306,14 +1306,15 @@ def Rel.Confined.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
     end
 
 def Confined.Local {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
-    (Hp : r.Confined p)
-  : r.Local p.Compl
+    (Hp : r.Confined p.Compl)
+  : r.Local p
  := begin
       intros y H,
       cases H with x H, cases H with Hpx Rxy,
-      apply or.inl, intro F,
-      refine Hpx (Hp _),
-      existsi y, exact and.intro F Rxy
+      apply classical.by_contradiction,
+      intro F,
+      apply Hp ⟨y, and.intro (λ F', F (or.inl F')) Rxy⟩,
+      assumption
     end
 
 def Local.Confined {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}

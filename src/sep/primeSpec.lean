@@ -516,43 +516,70 @@ def ZeroPt.Everywhere {X : OrdAlg.{ℓ}} {S : Set X.alg}
       }
     end
 
-def OrdAlg.BigPt (A : OrdAlg.{ℓ}) (AUC : A.ord.UpClosed) (S : Set A.alg)
+def OrdAlg.BigPt (A : OrdAlg.{ℓ}) (AUC : A.ord.UpClosed)
+    (S : Set A.alg)
+    (HS : A.ord.Confined (JoinClosure S).Compl)
   : A.PrimeSpec
- := { set := A.ord.FnInv (JoinClosure (A.ord.Fn S)).Compl
+ := { set := (JoinClosure S).Compl
     , prime := begin
-                apply UpClosed.PrimePres,
-                { assumption },
-                { apply Set.JoinClosed.Complement_Prime,
-                  apply JoinClosure.JoinClosed
-                }
+                apply Set.JoinClosed.Complement_Prime,
+                apply JoinClosure.JoinClosed
               end
-    , locl := begin
-                intros x H, cases H with y H,
-                cases H with H Rxy,
-                cases H with z H,
-                cases H with Hz Ryz,
-                existsi z,
-                refine and.intro Hz _,
-                apply A.trans,
-                repeat { assumption }
-              end
+    , locl := HS
     }
 
 def BigPt.In {X : OrdAlg.{ℓ}} {XUC : X.ord.UpClosed} {S : Set X.alg}
-  : X.BigPt @XUC S ∈ (OrdAlg.PrimeSpec.Topology X).Open (eq S)
+    { HS : X.ord.Confined (JoinClosure S).Compl }
+  : X.BigPt @XUC S HS ∈ (OrdAlg.PrimeSpec.Topology X).Open (eq S)
  := begin
       existsi (OrdAlg.PrimeSpec.OpenBasis X).Open S,
       refine exists.intro _ _,
       { existsi S, exact and.intro rfl rfl },
       { intros x F,
         cases F with HSx F,
-        cases F with y F,
-        cases F with F Rxy,
-        apply F,
+        apply F, clear F,
         apply JoinClosure.gen,
-        existsi x, exact and.intro HSx Rxy
+        assumption
       }
     end
+
+-- def OrdAlg.BigPt (A : OrdAlg.{ℓ}) (AUC : A.ord.UpClosed) (S : Set A.alg)
+--   : A.PrimeSpec
+--  := { set := A.ord.FnInv (JoinClosure (A.ord.Fn S)).Compl
+--     , prime := begin
+--                 apply UpClosed.PrimePres,
+--                 { assumption },
+--                 { apply Set.JoinClosed.Complement_Prime,
+--                   apply JoinClosure.JoinClosed
+--                 }
+--               end
+--     , locl := begin
+--                 intros x H, cases H with y H,
+--                 cases H with H Rxy,
+--                 cases H with z H,
+--                 cases H with Hz Ryz,
+--                 existsi z,
+--                 refine and.intro Hz _,
+--                 apply A.trans,
+--                 repeat { assumption }
+--               end
+--     }
+
+-- def BigPt.In {X : OrdAlg.{ℓ}} {XUC : X.ord.UpClosed} {S : Set X.alg}
+--   : X.BigPt @XUC S ∈ (OrdAlg.PrimeSpec.Topology X).Open (eq S)
+--  := begin
+--       existsi (OrdAlg.PrimeSpec.OpenBasis X).Open S,
+--       refine exists.intro _ _,
+--       { existsi S, exact and.intro rfl rfl },
+--       { intros x F,
+--         cases F with HSx F,
+--         cases F with y F,
+--         cases F with F Rxy,
+--         apply F,
+--         apply JoinClosure.gen,
+--         existsi x, exact and.intro HSx Rxy
+--       }
+--     end
 
 -- def OrdAlg.BigPt (A : OrdAlg.{ℓ}) (S : Set A.alg) : A.PrimeSpec
 --  := { set := set.sUnion ((λ (p : OrdAlg.PrimeSpec A), p.set) <$> (PrimeSpec.BasicOpen S))

@@ -644,6 +644,22 @@ def JoinClosure.JoinClosed {A : Alg.{ℓ}} (S : Set A)
       exact JoinClosure.mul Jx Gx₁ Gx₂
     end
 
+def JoinClosed.JoinClosure {A : Alg.{ℓ}} {S : Set A}
+    (SJC : S.JoinClosed)
+  : JoinClosure S = S
+ := begin
+      apply funext, intro x,
+      apply iff.to_eq, apply iff.intro,
+      { intro H,
+        induction H with x' Hx' x₁ x₂ x₃ J Hx₁ Hx₂,
+        { assumption },
+        { apply SJC _ _ _ J,
+          repeat { assumption }
+        }
+      },
+      { intro Hx, apply JoinClosure.gen, assumption }
+    end
+
 def Alg.JoinClosure₁ (A : Alg.{ℓ}) (x : A.τ) : Set A
  := JoinClosure (eq x)
 

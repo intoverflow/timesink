@@ -22,7 +22,7 @@ def PrimeAlg {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
     (p : X.PrimeSpec)
   : OrdAlg.{ℓ}
  := UpClosed.Prime.Localize X @XUC p.set
-              (Confined.Local p.locl)
+              (Confined.Local (cast begin rw Set.ComplCompl end p.locl))
               p.prime
 
 structure Sec {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
@@ -207,6 +207,43 @@ def OrdAlg.ToSection {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
                 end
     }
 
+def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XUC : X.ord.UpClosed)
+    (S : Set X.alg) (SJC : S.JoinClosed)
+    (HS : X.ord.Confined S.Compl)
+    : OrdRel
+        ((OrdAlg.Struct X @XUC).Section (eq S))
+        (UpClosed.JoinClosed.Localize X @XUC S (Confined.Local HS) SJC)
+ := { rel := λ x y, x = OrdAlg.to_section @XUC S y
+    , incr := λ v₁ v₂ w₂ E L₁₂
+              , begin
+                  subst E,
+                  have Q := OrdAlg.to_section.surj @XUC v₁,
+                  cases Q with w₁ Hw₁,
+                  existsi w₁,
+                  apply and.intro Hw₁.symm,
+                  subst Hw₁,
+                  have HS' : Rel.Confined (X.ord) (Set.Compl (JoinClosure S)), from
+                    begin
+                      rw JoinClosed.JoinClosure @SJC,
+                      exact HS
+                    end,
+                  have Q := L₁₂ { val := X.BigPt @XUC S HS'
+                                , property := BigPt.In
+                                },
+                  cases Q ; clear Q,
+                  { apply Localization.locl.base, exact Rxy
+                  },
+                  { have Hs' : s ∈ S, from
+                      begin
+                        dsimp [OrdAlg.BigPt] at Hs,
+                        rw Set.ComplCompl at Hs,
+                        rw JoinClosed.JoinClosure @SJC at Hs,
+                        assumption
+                      end,
+                    exact Localization.locl.join Hs' Rx Ry J
+                  }
+                end
+    }
 
 -- namespace Structure
 -- namespace Section
