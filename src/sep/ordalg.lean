@@ -6,9 +6,6 @@ import .rel
 namespace Sep
 universes ℓ₁ ℓ₂ ℓ₃ ℓ₄
 
-/- Relations between separation algebras
- -
- -/
 structure OrdAlg : Type.{ℓ₁ + 1}
  := (alg : Alg.{ℓ₁})
     (ord : Rel alg alg)
@@ -26,6 +23,17 @@ structure OrdRel (A : OrdAlg.{ℓ₁}) (B : OrdAlg.{ℓ₂})
               (Lx : x₁ ≤ x₂)
             , ∃ y₁, rel x₁ y₁ ∧ y₁ ≤ y₂)
 
+def OrdAlg.IdRel (A : OrdAlg.{ℓ₁}) : OrdRel A A
+ := { rel := A.alg.IdRel
+    , incr := begin
+                intros x₁ x₂ y₂ R₂ Lx,
+                existsi x₁,
+                apply and.intro rfl,
+                cases R₂,
+                exact Lx
+              end
+    }
+
 def OrdRel.ConfinedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}} (r : OrdRel A B)
   : ∀ {p : Set B.alg} (Hp : B.ord.Confined p)
     , A.ord.Confined (r.rel.FnInv p)
@@ -42,25 +50,5 @@ def OrdRel.LocalPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}} (r : OrdRel A B
   : Prop
  := ∀ (p : Set B.alg) (pLocal : B.ord.Local p.Compl)
     , A.ord.Local (r.rel.FnInv p).Compl
-
-def idea {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}} (r : OrdRel A B)
-  : r.LocalPres
- := begin
-      intros p Hp,
-      intros a₂ H, cases H with a₁ H, cases H with Hpa₁ La,
-      apply or.inl, intro F,
-      cases F with b₂ F, cases F with Hpb₂ R₂,
-      have Q := r.incr _ _ _ R₂ La,
-      cases Q with b₁ Q, cases Q with R₁ Lb,
-      apply Hpa₁, existsi b₁,
-      refine and.intro _ R₁,
-      apply classical.by_contradiction,
-      intro F,
-      have Q := Hp ⟨b₁, and.intro F Lb⟩,
-      cases Q with Q Q,
-      { exact Q Hpb₂ },
-      { 
-      }
-    end
 
 end Sep

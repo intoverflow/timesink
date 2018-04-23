@@ -251,107 +251,6 @@ def Rel.increasing {A : Alg.{ℓ₁}} (r : Rel A A)
  := λ s, ∀ x y, A.join s x y → r x y
 
 
--- Local and confined sets
-def Rel.Local {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
-  : Prop
- := r.Fn S ⊆ S ∪ r.increasing
-
-def Rel.Local.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
-    (r_trans : r.Trans)
-  : r.Local (r.Fn S)
- := begin
-      intros z H,
-      cases H with y H,
-      cases H with H Ryz,
-      cases H with x H,
-      cases H with HSx Rxy,
-      apply or.inl,
-      existsi x,
-      apply and.intro, assumption,
-      apply r_trans, repeat { assumption }
-    end
-
-def Rel.Local.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
-    (r_trans : r.Trans)
-    (Hp : r.Local p.Compl)
-  : r.Local (r.FnInv p).Compl
- := begin
-      intros y H, cases H with x H,
-      cases H with H Rxy,
-      apply or.inl,
-      intro F,
-      cases F with x' F,
-      cases F with Hx' Ryx',
-      apply H,
-      existsi x',
-      apply and.intro Hx',
-      apply r_trans,
-      repeat { assumption }
-    end
-
-
-def Rel.Confined {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
-  : Prop
- := r.FnInv p ⊆ p
-
-def Rel.Confined.Fn {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
-    (r_trans : r.Trans)
-    (HS : r.Confined S.Compl)
-  : r.Confined (r.Fn S).Compl
- := begin
-      intros y H,
-      cases H with z H,
-      cases H with H Ryz,
-      intro F,
-      cases F with x F,
-      cases F with HSx Rxy,
-      apply H,
-      existsi x,
-      apply and.intro HSx,
-      apply r_trans, repeat { assumption }
-    end
-
-def Rel.Confined.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
-    (r_trans : r.Trans)
-    (Hp : r.Confined p)
-  : r.Confined (r.FnInv p)
- := begin
-      intros x H,
-      cases H with y H,
-      cases H with H Rxy,
-      cases H with z H,
-      cases H with Hpz Ryz,
-      existsi z,
-      apply and.intro Hpz,
-      apply r_trans, repeat { assumption }
-    end
-
-def Confined.Local {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
-    (Hp : r.Confined p)
-  : r.Local p.Compl
- := begin
-      intros y H,
-      cases H with x H, cases H with Hpx Rxy,
-      apply or.inl, intro F,
-      refine Hpx (Hp _),
-      existsi y, exact and.intro F Rxy
-    end
-
-def Local.Confined {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}
-    (HS₁ : r.Local S)
-    (HS₂ : r.increasing ⊆ S)
-  : r.Confined S.Compl
- := begin
-      intros x H,
-      cases H with y H,
-      cases H with HSy Rxy,
-      intro F,
-      have Q := HS₁ ⟨x, and.intro F Rxy⟩,
-      cases Q with Q Q,
-      { exact HSy Q },
-      { exact HSy (HS₂ Q) }
-    end
-
 -- The proper domain of the function induced by a relation
 def Rel.Dom {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂)
   : Set A₁
@@ -1329,5 +1228,107 @@ def Rel.FnGenPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂
 def Rel.FnNonGenPres {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} (r : Rel A₁ A₂) : Prop
  := ∀ {p : Set A₂} (pNG : p.NonGenerating)
     , (r.FnInv p).NonGenerating
+
+
+-- Local and confined sets
+def Rel.Local {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
+  : Prop
+ := r.Fn S ⊆ S ∪ r.increasing
+
+def Rel.Local.Fn {A : Alg.{ℓ₁}} (S : Set A) (r : Rel A A)
+    (r_trans : r.Trans)
+  : r.Local (r.Fn S)
+ := begin
+      intros z H,
+      cases H with y H,
+      cases H with H Ryz,
+      cases H with x H,
+      cases H with HSx Rxy,
+      apply or.inl,
+      existsi x,
+      apply and.intro, assumption,
+      apply r_trans, repeat { assumption }
+    end
+
+def Rel.Local.FnInv {A : Alg.{ℓ₁}} (p : Set A) (r : Rel A A)
+    (r_trans : r.Trans)
+    (Hp : r.Local p.Compl)
+  : r.Local (r.FnInv p).Compl
+ := begin
+      intros y H, cases H with x H,
+      cases H with H Rxy,
+      apply or.inl,
+      intro F,
+      cases F with x' F,
+      cases F with Hx' Ryx',
+      apply H,
+      existsi x',
+      apply and.intro Hx',
+      apply r_trans,
+      repeat { assumption }
+    end
+
+
+def Rel.Confined {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
+  : Prop
+ := r.FnInv p ⊆ p
+
+def Rel.Confined.Fn {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A)
+    (r_trans : r.Trans)
+    (HS : r.Confined S.Compl)
+  : r.Confined (r.Fn S).Compl
+ := begin
+      intros y H,
+      cases H with z H,
+      cases H with H Ryz,
+      intro F,
+      cases F with x F,
+      cases F with HSx Rxy,
+      apply H,
+      existsi x,
+      apply and.intro HSx,
+      apply r_trans, repeat { assumption }
+    end
+
+def Rel.Confined.FnInv {A : Alg.{ℓ₁}} (r : Rel A A) (p : Set A)
+    (r_trans : r.Trans)
+    (Hp : r.Confined p)
+  : r.Confined (r.FnInv p)
+ := begin
+      intros x H,
+      cases H with y H,
+      cases H with H Rxy,
+      cases H with z H,
+      cases H with Hpz Ryz,
+      existsi z,
+      apply and.intro Hpz,
+      apply r_trans, repeat { assumption }
+    end
+
+def Confined.Local {A : Alg.{ℓ₁}} {p : Set A} {r : Rel A A}
+    (Hp : r.Confined p)
+  : r.Local p.Compl
+ := begin
+      intros y H,
+      cases H with x H, cases H with Hpx Rxy,
+      apply or.inl, intro F,
+      refine Hpx (Hp _),
+      existsi y, exact and.intro F Rxy
+    end
+
+def Local.Confined {A : Alg.{ℓ₁}} {S : Set A} {r : Rel A A}
+    (HS₁ : r.Local S)
+    (HS₂ : r.increasing ⊆ S)
+  : r.Confined S.Compl
+ := begin
+      intros x H,
+      cases H with y H,
+      cases H with HSy Rxy,
+      intro F,
+      have Q := HS₁ ⟨x, and.intro F Rxy⟩,
+      cases Q with Q Q,
+      { exact HSy Q },
+      { exact HSy (HS₂ Q) }
+    end
 
 end Sep

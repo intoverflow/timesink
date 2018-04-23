@@ -3,6 +3,7 @@
  -/
 import .basic
 import .rel
+import .ordalg
 import ..top.basic
 
 namespace Sep
@@ -10,32 +11,32 @@ universes ℓ₁ ℓ₂
 open Top
 
 structure Sheaf {A : Type.{ℓ₁}} (TA : Topology A)
- := (Section : TA.OI → Alg.{ℓ₂})
+ := (Section : TA.OI → OrdAlg.{ℓ₂})
     (ρ : ∀ (U₁ U₂ : TA.OI) (Res : TA.Open U₂ ⊆ TA.Open U₁)
-         , Rel (Section U₁) (Section U₂))
+         , OrdRel (Section U₁) (Section U₂))
     (ρ_id : ∀ (U : TA.OI) (Res : TA.Open U ⊆ TA.Open U)
-            , ρ U U Res = (Section U).IdRel)
+            , (ρ U U Res).rel = (Section U).alg.IdRel)
     (ρ_circ : ∀ (U₁ U₂ U₃ : TA.OI)
                 (Res₁₂ : TA.Open U₂ ⊆ TA.Open U₁)
                 (Res₂₃ : TA.Open U₃ ⊆ TA.Open U₂)
                 (Res₁₃ : TA.Open U₃ ⊆ TA.Open U₁)
-              , ρ U₂ U₃ Res₂₃ ∘ ρ U₁ U₂ Res₁₂ = ρ U₁ U₃ Res₁₃)
+              , (ρ U₂ U₃ Res₂₃).rel ∘ (ρ U₁ U₂ Res₁₂).rel = (ρ U₁ U₃ Res₁₃).rel)
     (locl : ∀ (U : TA.OI) (UU : set TA.OI)
               (Ucover : TA.Open U = set.sUnion (TA.Open <$> UU))
-              (s t : (Section U).τ)
+              (s t : (Section U).alg.τ)
               (E : ∀ (V : {V // V ∈ UU})
-                    , ρ U V (Topology.Cover.Subset Ucover V.property) s
-                      = ρ U V (Topology.Cover.Subset Ucover V.property) t)
+                    , (ρ U V (Topology.Cover.Subset Ucover V.property)).rel s
+                      = (ρ U V (Topology.Cover.Subset Ucover V.property)).rel t)
             , s = t)
     (glue : ∀ (U : TA.OI) (UU : set TA.OI)
               (Ucover : TA.Open U = set.sUnion (TA.Open <$> UU))
-              (loc : ∀ (V : {V // V ∈ UU}), (Section V.val).τ)
+              (loc : ∀ (V : {V // V ∈ UU}), (Section V.val).alg.τ)
               (E : ∀ (V₁ V₂ : {V // V ∈ UU})
-                   , ρ V₁ (V₁ ∩ V₂) (Topology.Inter.Subset_l V₁ V₂) (loc V₁)
-                     = ρ V₂ (V₁ ∩ V₂) (Topology.Inter.Subset_r V₁ V₂) (loc V₂))
-            , ∃ (x : (Section U).τ)
+                   , (ρ V₁ (V₁ ∩ V₂) (Topology.Inter.Subset_l V₁ V₂)).rel (loc V₁)
+                     = (ρ V₂ (V₁ ∩ V₂) (Topology.Inter.Subset_r V₁ V₂)).rel (loc V₂))
+            , ∃ (x : (Section U).alg.τ)
               , ∀ (V : {V // V ∈ UU})
-                , ρ U V (Topology.Cover.Subset Ucover V.property) x (loc V))
+                , (ρ U V (Topology.Cover.Subset Ucover V.property)).rel x (loc V))
 
 structure BasisSheaf {A : Type.{ℓ₁}} (TA : OpenBasis A)
  := (Section : TA.OI → Alg.{ℓ₂})
