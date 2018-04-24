@@ -1362,6 +1362,68 @@ def Rel.LocallyDownClosed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} (r: Rel A B) (S 
       (R₂ : r m₂ x₂)
     , ∃ m₃, r m₃ x₃ ∧ A.join m₁ m₂ m₃
 
+structure Rel.LocallyFlat {A : Alg.{ℓ₁}} (r : Rel A A) (S : Set A) : Prop
+ := (up : r.LocallyUpClosed S)
+    (down : r.LocallyDownClosed S)
+
+
+def LocallyUpClosed.Union {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A B}
+    {S₁ S₂ : Set A}
+    (H₁ : r.LocallyUpClosed S₁)
+    (H₂ : r.LocallyUpClosed S₂)
+  : r.LocallyUpClosed (S₁ ∪ S₂)
+ := begin
+      intros s x₂ x₃ y₃ Hs J R₃,
+      cases Hs with Hs Hs,
+      { apply H₁, repeat { assumption } },
+      { apply H₂, repeat { assumption } }
+    end
+
+def LocallyDownClosed.Union {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A B}
+    {S₁ S₂ : Set B}
+    (H₁ : r.LocallyDownClosed S₁)
+    (H₂ : r.LocallyDownClosed S₂)
+  : r.LocallyDownClosed (S₁ ∪ S₂)
+ := begin
+      intros s x₂ x₃ m₁ m₂ Hs J R₁ R₂,
+      cases Hs with Hs Hs,
+      { apply H₁, repeat { assumption } },
+      { apply H₂, repeat { assumption } }
+    end
+
+def LocallyFlat.Union {A : Alg.{ℓ₁}} {r: Rel A A}
+    {S₁ S₂ : Set A}
+    (H₁ : r.LocallyFlat S₁)
+    (H₂ : r.LocallyFlat S₂)
+  : r.LocallyFlat (S₁ ∪ S₂)
+ := { up := LocallyUpClosed.Union H₁.up H₂.up
+    , down := LocallyDownClosed.Union H₁.down H₂.down
+    }
+
+def LocallyUpClosed.Subset {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A B}
+    (S T : Set A)
+    (HST : S ⊆ T) (HT : r.LocallyUpClosed T)
+  : r.LocallyUpClosed S
+ := begin
+      intros s x₂ x₃ y₃ Hs J R₃,
+      refine HT _ _ _ _ _ J R₃,
+      apply HST,
+      assumption
+    end
+
+
+def LocallyDownClosed.Subset {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A B}
+    (S T : Set B)
+    (HST : S ⊆ T) (HT : r.LocallyDownClosed T)
+  : r.LocallyDownClosed S
+ := begin
+      intros s x₂ x₃ m₁ m₂ Hs J R₁ R₂,
+      refine HT _ _ _ _ _ _ J R₁ R₂,
+      apply HST,
+      assumption
+    end
+
+
 def UpClosed.LocallyUpClosed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A B}
     (rUC : r.UpClosed) (S : Set A)
   : r.LocallyUpClosed S
@@ -1378,18 +1440,24 @@ def DownClosed.LocallyDownClosed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} {r: Rel A
       exact rDC R₁ R₂ J
     end
 
-def Rel.LocallyClosed {A : Alg.{ℓ₁}} (r: Rel A A) (S : Set A)
+-- def Rel.LocallyClosed {A : Alg.{ℓ₁}} (r: Rel A A) (S : Set A)
+--   : Prop
+--  := r.LocallyUpClosed S ∨ r.LocallyDownClosed S
+
+-- def UpClosed.LocallyClosed {A : Alg.{ℓ₁}} {r: Rel A A}
+--     (rUC : r.UpClosed) (S : Set A)
+--   : r.LocallyClosed S
+--  := or.inl (UpClosed.LocallyUpClosed @rUC S)
+
+-- def DownClosed.LocallyClosed {A : Alg.{ℓ₁}} {r: Rel A A}
+--     (rDC : r.DownClosed) (S : Set A)
+--   : r.LocallyClosed S
+--  := or.inr (DownClosed.LocallyDownClosed @rDC S)
+
+
+def Rel.Closed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} (r: Rel A B)
   : Prop
- := r.LocallyUpClosed S ∨ r.LocallyDownClosed S
+ := r.UpClosed ∨ r.DownClosed
 
-def UpClosed.LocallyClosed {A : Alg.{ℓ₁}} {r: Rel A A}
-    (rUC : r.UpClosed) (S : Set A)
-  : r.LocallyClosed S
- := or.inl (UpClosed.LocallyUpClosed @rUC S)
-
-def DownClosed.LocallyClosed {A : Alg.{ℓ₁}} {r: Rel A A}
-    (rDC : r.DownClosed) (S : Set A)
-  : r.LocallyClosed S
- := or.inr (DownClosed.LocallyDownClosed @rDC S)
 
 end Sep

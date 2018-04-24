@@ -92,7 +92,13 @@ noncomputable def Topology.Cover.mem_fn {A : Type.{ℓ}} {TA : Topology A}
 def Image {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (f : A → B)
   : set A → set B
- := λ S b, ∃ a, b = f a
+ := λ S b, ∃ a, a ∈ S ∧ b = f a
+
+def OpenMap {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    (TA : Topology A) (TB : Topology B)
+    (f : A → B)
+  : Prop
+ := ∀ OA, ∃ OB, Image f (TA.Open OA) = TB.Open OB
 
 def PreImage {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (f : A → B)
@@ -329,6 +335,49 @@ def OpenBasis.BaseOpen {A : Type.{ℓ}} (TA : OpenBasis A)
         have E₁' : oi = oi' := E₁, subst E₁', clear E₁,
         have E₂' := E₂.symm, subst E₂', clear E₂,
         exact Hux
+      }
+    end
+
+def OpenBasis.OpenMap {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+  {TA : OpenBasis A} {TB : Topology B}
+  {f : A → B}
+  (fC : TA.OI → TB.OI)
+  (HfC : ∀ oia, Image f (TA.Open oia) = TB.Open (fC oia))
+  : OpenMap TA.Topology TB f
+ := begin
+      intro U,
+      existsi (TB.union (λ z, ∃ (z' : TA.OI), U z' ∧ z = fC z')),
+      apply funext, intro x,
+      apply iff.to_eq, apply iff.intro,
+      { intro H, cases H with y H, cases H with H E, subst E,
+        rw TB.Ounion,
+        cases H with V H, cases H with H Hy,
+        cases H with oia H, cases H with H E,
+        subst E,
+        refine exists.intro _
+                (exists.intro
+                  (exists.intro _
+                    (and.intro
+                      (exists.intro _ (and.intro H rfl))
+                      rfl))
+                  _),
+        rw (HfC _).symm,
+        existsi y,
+        exact and.intro Hy rfl
+      },
+      { intro H, rw TB.Ounion at H,
+        cases H with V H, cases H with H Hx,
+        cases H with oib H, cases H with H E,
+        subst E,
+        cases H with oia H, cases H with Hoia E,
+        subst E,
+        rw (HfC _).symm at Hx,
+        cases Hx with y H, cases H with H E,
+        subst E,
+        existsi y,
+        refine and.intro _ rfl,
+        refine exists.intro _ (exists.intro _ H),
+        existsi oia, exact and.intro Hoia rfl
       }
     end
 

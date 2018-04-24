@@ -463,6 +463,35 @@ def locl.DownClosed {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
 
 end Localization
 
+def Set.Localizable {A : OrdAlg.{ℓ}} (S : Set A.alg)
+  : Prop
+ := (Localization.locl S A.ord).Trans
+
+-- def Localizable.union {A : OrdAlg.{ℓ}}
+--     {S₁ S₂ : Set A.alg}
+--     (H₁ : S₁.Localizable)
+--     (H₂ : S₂.Localizable)
+--   : (S₁ ∪ S₂).Localizable
+--  := begin
+--       intros a₁ a₂ a₃ L₁ L₂,
+--       cases L₁ with _ _ R₁  _ x₁ y₁ _ s₁ Hs₁ Rx₁ Ry₁ J₁ ; clear L₁,
+--       { cases L₂ with _ _ R₂  _ x₂ y₂ _ s₂ Hs₂ Rx₂ Ry₂ J₂ ; clear L₂,
+--         { apply Localization.locl.base,
+--           apply A.trans, repeat { assumption }
+--         },
+--         { refine Localization.locl.join Hs₂ _ Ry₂ J₂,
+--           apply A.trans, repeat { assumption }
+--         }
+--       },
+--       { cases L₂ with _ _ R₂  _ x₂ y₂ _ s₂ Hs₂ Rx₂ Ry₂ J₂ ; clear L₂,
+--         { refine Localization.locl.join Hs₁ Rx₁ _ J₁,
+--           apply A.trans, repeat { assumption }
+--         },
+--         { exact sorry -- not true?
+--         }
+--       }
+--     end
+
 def OrdAlg.Localize (A : OrdAlg.{ℓ}) (S : Set A.alg)
     (H : (Localization.locl S A.ord).Trans)
   : OrdAlg.{ℓ}
