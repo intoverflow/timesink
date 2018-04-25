@@ -179,6 +179,13 @@ def locl.iff {A : Alg.{ℓ}} {S : Set A} {r : Rel A A}
       }
     end
 
+def locl.iff₂ {A : Alg.{ℓ}} {S : Set A} {r : Rel A A}
+    (r_refl : r.Refl)
+    (r_trans : r.Trans)
+    {x y}
+  : locl S r x y = (r ∘ locl_step S ∘ r) x y
+ := begin rw locl.iff r_refl r_trans end
+
 def locl.trans {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
     (SJC : S.JoinClosed)
     (r_closed : (r.Local S ∧ r.UpClosed) ∨ r.DownClosed)

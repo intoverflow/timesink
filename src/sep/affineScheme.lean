@@ -177,7 +177,7 @@ def OrdAlg.BasicOpen.to_section {X : OrdAlg.{ℓ}} (S : X.BasicOpen) (XC : X.ord
       }
 
 def OrdAlg.to_section.inj {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
-    (S : X.BasicOpen)
+    {S : X.BasicOpen}
     {x₁ x₂ : X.alg.τ}
     (E : S.to_section XC x₁ = S.to_section XC x₂)
   : x₁ = x₂
@@ -218,7 +218,7 @@ def OrdAlg.to_section.surj {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
       trivial
     end
 
-def OrdAlg.ToSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
+def ToSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
     (S : X.BasicOpen) (SJC : S.set.JoinClosed)
     : OrdRel
         (BasisAlg XC S SJC)
@@ -245,7 +245,7 @@ def OrdAlg.ToSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
                 end
     }
 
-def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
+def FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
     (S : X.BasicOpen) (SJC : S.set.JoinClosed)
     : OrdRel
         ((X.Struct XC).Section (eq S))
@@ -316,6 +316,56 @@ def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
                 end
     }
 
+def OrdAlg.ToSection_FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
+    (S : X.BasicOpen) (SJC : S.set.JoinClosed)
+  : ToSection XC S SJC ∘∘ FromSection XC S SJC = OrdAlg.IdRel _
+ := begin
+      apply OrdRel.eq,
+      apply funext, intro x, apply funext, intro y,
+      apply eq.symm, apply iff.to_eq, apply iff.intro,
+      { intro H,
+        have Q := OrdAlg.to_section.surj XC x,
+        cases Q with y' E, subst E,
+        refine exists.intro (y.fn { val := _, property := ZeroPt.Everywhere })
+                (and.intro
+                  (exists.intro _
+                    (and.intro rfl _))
+                  _),
+        { exact sorry -- is true by H
+        },
+        { have Q := OrdAlg.to_section.surj XC y,
+          cases Q with y' E, subst E,
+          exact rfl
+        }
+      },
+      { intro H, cases H with w H,
+        cases H with H E₂,
+        have E₂' := E₂.symm, subst E₂', clear E₂,
+        cases H with v H, cases H with E H,
+        have E' := E.symm, subst E', clear E,
+        intro p,
+        have Q := cast (Localization.locl.iff₂ X.refl X.trans) H,
+        cases Q with x Q, cases Q with Q Lxw,
+        cases Q with y Q, cases Q with Lvy Q,
+        apply cast (Localization.locl.iff₂ X.refl X.trans).symm,
+        refine exists.intro _ (and.intro _ Lxw),
+        refine exists.intro _ (and.intro Lvy _),
+        exact sorry -- is true by Q
+      }
+    end
+
+def OrdAlg.FromSection_ToSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
+    (S : X.BasicOpen) (SJC : S.set.JoinClosed)
+  : FromSection XC S SJC ∘∘ ToSection XC S SJC = OrdAlg.IdRel _
+ := begin
+      apply OrdRel.eq,
+      apply funext, intro x, apply funext, intro y,
+      apply eq.symm, apply iff.to_eq, apply iff.intro,
+      { exact sorry
+      },
+      { exact sorry
+      }
+    end
 
 def OrdAlg.Spec (X : OrdAlg.{ℓ}) (XC : X.ord.Closed)
   : OrdAlgSpace
