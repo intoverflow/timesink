@@ -19,7 +19,7 @@ def expand_prime {X : OrdAlg.{ℓ}}
     }
 
 def PrimeAlg {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
-    (p : X.Spec)
+    (p : X.Pt)
   : OrdAlg.{ℓ}
  := X.Localize p.set.Compl
       begin
@@ -33,7 +33,7 @@ def PrimeAlg {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
             apply Confined.Local,
             rw Set.ComplCompl,
             intros x Hx,
-            rw p.locl.symm,
+            rw p.fixed.symm,
             exact Hx
           },
           { exact or.inr @XDC }
@@ -53,7 +53,7 @@ def BasisAlg {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
           { apply or.inl,
             refine and.intro _ @XUC,
             intros x H,
-            exact or.inl (S.locl H)
+            exact or.inl (S.fixed H)
           },
           { exact or.inr @XDC }
         },
@@ -129,6 +129,7 @@ def SecAlg {X : OrdAlg.{ℓ}} (XC : X.ord.Closed) (o : X.Top.OI)
 def OrdAlg.Struct (X : OrdAlg.{ℓ}) (XC : X.ord.Closed)
   : Sheaf X.Top
  := { Section := SecAlg XC
+    , Stalk := λ p, true.intro
     , ρ := λ U₁ U₂ H
            , { rel := λ s₁ s₂, s₂ = res XC H s₁
              , incr
@@ -265,7 +266,7 @@ def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
                       { intros H F,
                         cases H with y H,
                         apply H.1,
-                        apply S.locl,
+                        apply S.fixed,
                         existsi x,
                         exact and.intro F H.2
                       },
@@ -277,7 +278,18 @@ def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
                     end,
                   have Q := L₁₂ { val := { set := S.set.Compl
                                          , prime := Set.JoinClosed.Complement_Prime SJC
-                                         , locl := HS'
+                                         , fixed := HS'
+                                         , non_increasing
+                                             := begin
+                                                  apply funext, intro x,
+                                                  apply eq.symm, apply iff.to_eq, apply iff.intro,
+                                                  { intro F, exact false.elim F },
+                                                  { intro F,
+                                                    apply F.2,
+                                                    apply S.increasing,
+                                                    exact F.1
+                                                  }
+                                                end
                                          }
                                 , property
                                    := begin
@@ -304,5 +316,55 @@ def OrdAlg.FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
                 end
     }
 
+
+def OrdAlg.Spec (X : OrdAlg.{ℓ}) (XC : X.ord.Closed)
+  : OrdAlgSpace
+ := { Pt := X.Pt
+    , Top := X.Top
+    , Sh := X.Struct XC
+    , stalk := true.intro
+    }
+
+def PrimeRel.Spec {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+    (AC : A.ord.Closed) (BC : B.ord.Closed)
+    (r : OrdRel A B)
+    (rP : r.PrimeRel)
+  : OrdAlgSpaceMorphism (B.Spec BC) (A.Spec AC)
+ := { map := PrimeRel.Map r rP
+    , sh :=
+        { rel := λ U,
+          { rel := λ s t
+            , ∀ (p : {p // p ∈ (OrdAlg.Top B).Open (((PrimeRel.Map r rP).preimage U).val)})
+              , r.rel (s.fn { val := (PrimeRel.Map r rP).map p.val
+                            , property := (PrimeRel.Map r rP).in_preimage p
+                            })
+                      (t.fn p)
+          , incr := sorry
+          }
+        , res := sorry
+        }
+    , stalk := true.intro
+    }
+
+def JoinRel.Spec {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+    (AC : A.ord.Closed) (BC : B.ord.Closed)
+    (r : OrdRel A B)
+    (rJ : r.JoinRel)
+  : OrdAlgSpaceMorphism (A.Spec AC) (B.Spec BC)
+ := { map := JoinRel.Map r rJ
+    , sh :=
+        { rel := λ U,
+          { rel := λ s t
+            , ∀ (p : {p // p ∈ (OrdAlg.Top A).Open (((JoinRel.Map r rJ).preimage U).val)})
+              , r.rel (t.fn p)
+                      (s.fn { val := (JoinRel.Map r rJ).map p.val
+                            , property := (JoinRel.Map r rJ).in_preimage p
+                            })
+          , incr := sorry
+          }
+        , res := sorry
+        }
+    , stalk := true.intro
+    }
 
 end Sep

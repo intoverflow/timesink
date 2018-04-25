@@ -114,18 +114,48 @@ def PreImage.Compl {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
 def Continuous {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (TA : Topology A) (TB : Topology B)
     (f : A → B)
-  : Prop
- := ∀ OB, ∃ OA, PreImage f (TB.Open OB) = TA.Open OA
+ := ∀ OB, { OA // PreImage f (TB.Open OB) = TA.Open OA }
 
-structure Homeomorphism {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+structure Map {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
     (TA : Topology A) (TB : Topology B)
-    (f : A → B)
-    (g : B → A)
-  : Prop
- := (cont₁ : Continuous TA TB f)
-    (cont₂ : Continuous TB TA g)
-    (eq₁ : ∀ a, g (f a) = a)
-    (eq₂ : ∀ b, f (g b) = b)
+ := (map : A → B)
+    (preimage : Continuous TA TB map)
+
+def Map.in_preimage {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    {TA : Topology A} {TB : Topology B}
+    (f : Map TA TB)
+    {U} (p : {p // p ∈ TA.Open ((f.preimage U).val)})
+  : f.map p.val ∈ TB.Open U
+ := begin
+      cases p with p H,
+      simp,
+      rw (f.preimage U).property.symm at H,
+      exact H
+    end
+
+def Map.subset {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    {TA : Topology A} {TB : Topology B}
+    (f : Map TA TB)
+  : ∀ {U₁ U₂}
+    , TB.Open U₁ ⊆ TB.Open U₂
+    → TA.Open (f.preimage U₁).val ⊆ TA.Open (f.preimage U₂).val
+ := begin
+      intros U₁ U₂ H,
+      intros x Hx,
+      rw (f.preimage U₁).property.symm at Hx,
+      rw (f.preimage U₂).property.symm,
+      apply H, apply Hx
+    end
+
+-- structure Homeomorphism {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+--     (TA : Topology A) (TB : Topology B)
+--     (f : A → B)
+--     (g : B → A)
+--   : Prop
+--  := (cont₁ : Continuous TA TB f)
+--     (cont₂ : Continuous TB TA g)
+--     (eq₁ : ∀ a, g (f a) = a)
+--     (eq₂ : ∀ b, f (g b) = b)
 
 
 def PreImage.Intersection {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}

@@ -7,11 +7,12 @@ import .ordalg
 import ..top.basic
 
 namespace Sep
-universes ℓ₁ ℓ₂
+universes ℓ₁ ℓ₂ ℓ₃ ℓ₄
 open Top
 
 structure Sheaf {A : Type.{ℓ₁}} (TA : Topology A)
  := (Section : TA.OI → OrdAlg.{ℓ₂})
+    (Stalk : A → true) -- TODO: stalks and their univ property
     (ρ : ∀ (U₁ U₂ : TA.OI) (Res : TA.Open U₂ ⊆ TA.Open U₁)
          , OrdRel (Section U₁) (Section U₂))
     (ρ_id : ∀ (U : TA.OI) (Res : TA.Open U ⊆ TA.Open U)
@@ -38,67 +39,39 @@ structure Sheaf {A : Type.{ℓ₁}} (TA : Topology A)
               , ∀ (V : {V // V ∈ UU})
                 , (ρ U V (Topology.Cover.Subset Ucover V.property)).rel x (loc V))
 
-structure BasisSheaf {A : Type.{ℓ₁}} (TA : OpenBasis A)
- := (Section : TA.OI → Alg.{ℓ₂})
-    (ρ : ∀ (oi₁ oi₂ : TA.OI) (Res : TA.Open oi₂ ⊆ TA.Open oi₁)
-         , Rel (Section oi₁) (Section oi₂))
-    (ρ_id : ∀ (oi : TA.OI) (Res : TA.Open oi ⊆ TA.Open oi)
-            , ρ oi oi Res = (Section oi).IdRel)
-    (ρ_circ : ∀ (oi₁ oi₂ oi₃ : TA.OI)
-                (Res₁₂ : TA.Open oi₂ ⊆ TA.Open oi₁)
-                (Res₂₃ : TA.Open oi₃ ⊆ TA.Open oi₂)
-                (Res₁₃ : TA.Open oi₃ ⊆ TA.Open oi₁)
-              , ρ oi₂ oi₃ Res₂₃ ∘ ρ oi₁ oi₂ Res₁₂ = ρ oi₁ oi₃ Res₁₃)
-    (locl : ∀ (oi : TA.OI) (OI : set TA.OI)
-              (Ucover : TA.Open oi = set.sUnion (TA.Open <$> OI))
-              (s t : (Section oi).τ)
-              (E : ∀ (oi' : {oi' // oi' ∈ OI})
-                    , ρ oi oi' (OpenBasis.Cover.Subset Ucover oi'.property) s
-                      = ρ oi oi' (OpenBasis.Cover.Subset Ucover oi'.property) t)
-            , s = t)
-    (glue : ∀ {oi : TA.OI} {OI : set TA.OI}
-              (Ucover : TA.Open oi = set.sUnion (TA.Open <$> OI))
-              {W : Alg.{ℓ₁}}
-              {r : ∀ (oi' : {oi' // oi' ∈ OI}), Rel W (Section oi'.val)}
-              (E : ∀ (oi₁ oi₂ : {oi' // oi' ∈ OI})
-                   , ρ oi₁ (oi₁ ∩ oi₂) (OpenBasis.Inter.Subset_l oi₁ oi₂) ∘ r oi₁
-                     = ρ oi₂ (oi₁ ∩ oi₂) (OpenBasis.Inter.Subset_r oi₁ oi₂) ∘ r oi₂)
-            , Rel W (Section oi))
-    (glue_eq : ∀ {oi : TA.OI} {OI : set TA.OI}
-                 (Ucover : TA.Open oi = set.sUnion (TA.Open <$> OI))
-                 {W : Alg.{ℓ₁}}
-                 {r : ∀ (oi' : {oi' // oi' ∈ OI}), Rel W (Section oi'.val)}
-                 (E : ∀ (oi₁ oi₂ : {oi' // oi' ∈ OI})
-                      , ρ oi₁ (oi₁ ∩ oi₂) (OpenBasis.Inter.Subset_l oi₁ oi₂) ∘ r oi₁
-                        = ρ oi₂ (oi₁ ∩ oi₂) (OpenBasis.Inter.Subset_r oi₁ oi₂) ∘ r oi₂)
-               , ∀ oi', r oi' = ρ oi oi' (OpenBasis.Cover.Subset Ucover oi'.property)
-                                  ∘ glue Ucover E)
+def Sheaf.DirectIm {A : Type.{ℓ₁}} {B : Type.{ℓ₂}}
+    {TA : Topology A} {TB : Topology B}
+    (S : Sheaf.{ℓ₁ ℓ₃} TA)
+    (f : Map TA TB)
+  : Sheaf.{ℓ₂ ℓ₃} TB
+ := { Section := λ U, S.Section (f.preimage U).val
+    , Stalk := λ A, true.intro
+    , ρ := λ U₁ U₂ H, S.ρ _ _ (f.subset H)
+    , ρ_id := λ U H, S.ρ_id _ (f.subset H)
+    , ρ_circ := λ U₁ U₂ U₃ H₁₂ H₂₃ H₁₃
+                , S.ρ_circ _ _ _ (f.subset H₁₂) (f.subset H₂₃) (f.subset H₁₃)
+    , locl := λ U UU Ucover s t V
+              , sorry
+    , glue := sorry
+    }
 
-    -- (glue : ∀ (oi : TA.OI) (OI : set TA.OI)
-    --           (Ucover : TA.Open oi = set.sUnion (TA.Open <$> OI))
-    --           (loc : ∀ (oi' : {oi' // oi' ∈ OI}), (Section oi').τ)
-    --           (E : ∀ (oi₁ oi₂ : {oi' // oi' ∈ OI})
-    --                , ρ oi₁ (oi₁ ∩ oi₂) (OpenBasis.Inter.Subset_l oi₁ oi₂) (loc oi₁)
-    --                  = ρ oi₂ (oi₁ ∩ oi₂) (OpenBasis.Inter.Subset_r oi₁ oi₂) (loc oi₂))
-    --         , ∃ (g : (Section oi).τ)
-    --           , ∀ (oi' : {oi' // oi' ∈ OI})
-    --             , ρ oi (oi ∩ oi') (OpenBasis.Inter.Subset_l oi oi') g
-    --              = ρ oi' (oi ∩ oi') (OpenBasis.Inter.Subset_r oi oi') (loc oi'))
+structure SheafMorphism {A : Type.{ℓ₁}} {TA : Topology A}
+    (S₁ S₂ : Sheaf TA)
+ := (rel : ∀ (U : TA.OI), OrdRel (S₁.Section U) (S₂.Section U))
+    (res : ∀ (U₁ U₂ : TA.OI) (H : TA.Open U₂ ⊆ TA.Open U₁)
+           , (S₂.ρ _ _ H).action ∘ (rel U₁).action
+              = (rel U₂).action ∘ (S₁.ρ _ _ H).action)
 
---
--- Come back after you've shown that you can take inverse limits of
--- separation algebras; define the Section over U to be the inverse limit
--- of the sections over the basic open sets V ⊆ U.
---
--- def BasisSheaf.Sheaf {A : Type.{ℓ₁}} {TA : OpenBasis A}
---     (F : BasisSheaf.{ℓ₁ ℓ₂} TA)
---   : Sheaf TA.Topology
---  := { Section := begin end
---     , ρ := begin end
---     , ρ_id := begin end
---     , ρ_circ := begin end
---     , locl := begin end
---     , glue := begin end
---     }
+structure OrdAlgSpace
+ := (Pt : Type.{ℓ₁})
+    (Top : Topology Pt)
+    (Sh : Sheaf.{ℓ₁ ℓ₂} Top)
+    (stalk : true) -- TODO: stalks are local OrdAlgs
+
+structure OrdAlgSpaceMorphism
+    (X : OrdAlgSpace.{ℓ₁ ℓ₂}) (Y : OrdAlgSpace.{ℓ₃ ℓ₄})
+ := (map : Map X.Top Y.Top)
+    (sh : SheafMorphism Y.Sh (X.Sh.DirectIm map))
+    (stalk : true) -- TODO: rel on stalks are local OrdRels
 
 end Sep

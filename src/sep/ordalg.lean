@@ -65,7 +65,7 @@ def OrdRel.LocallyDownClosedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     , B.ord.LocallyDownClosed (r.rel.Fn S)
 
 
-structure OrdRel.UpClosed {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+structure OrdRel.StrongUpClosed {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     (r : OrdRel A B)
   : Prop
  := (ord : ∀ {x₁ x₂ x₃ y₃}
@@ -79,7 +79,7 @@ structure OrdRel.UpClosed {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
              (R₃ : r.rel y₃ x₃)
            , ∃ z₁ z₂, A.alg.join z₁ z₂ y₃ ∧ y₁ ≤ z₁ ∧ y₂ ≤ z₂)
 
-structure OrdRel.DownClosed {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+structure OrdRel.StrongDownClosed {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     (r : OrdRel A B)
   : Prop
  := (ord : ∀ {x₁ x₂ x₃ y₁ y₂}
@@ -94,9 +94,9 @@ structure OrdRel.DownClosed {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
              (R₃ : r.rel x₃ y₃)
            , ∃ (m₃ : (B.alg).τ), m₃ ≤ y₃ ∧ (B.alg).join y₁ y₂ m₃)
 
-def OrdRel.UpClosed.LocallyUpClosedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+def OrdRel.StrongUpClosed.LocallyUpClosedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     {r : OrdRel A B}
-    (rUC : r.UpClosed)
+    (rUC : r.StrongUpClosed)
   : r.LocallyUpClosedPres
  := begin
       intros p Hp,
@@ -107,9 +107,9 @@ def OrdRel.UpClosed.LocallyUpClosedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ�
       exact rUC.rel Jz R₁ R₂ R₃
     end
 
-def OrdRel.DownClosed.LocallyDownClosedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+def OrdRel.StrongDownClosed.LocallyDownClosedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     {r : OrdRel A B}
-    (rDC : r.DownClosed)
+    (rDC : r.StrongDownClosed)
   : r.LocallyDownClosedPres
  := begin
       intros S HS,
@@ -119,5 +119,22 @@ def OrdRel.DownClosed.LocallyDownClosedPres {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{�
       cases Q with Jz Q, cases Q with R₁ Q, cases Q with R₂ R₃,
       exact rDC.rel Jz R₁ R₂ R₃
     end
+
+def OrdRel.action {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+    (r : OrdRel A B)
+  : Rel A.alg B.alg
+ := B.ord ∘ r.rel ∘ A.ord
+
+structure OrdRel.PrimeRel {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+    (r : OrdRel A B)
+  : Prop
+ := (prime : r.action.FnPrimePres)
+    (increasing : r.action.Fn A.ord.increasing ⊆ B.ord.increasing)
+
+structure OrdRel.JoinRel {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+    (r : OrdRel A B)
+  : Prop
+ := (join : r.action.FnJoinClosedPres)
+    (increasing : B.ord.increasing ⊆ r.action.Fn A.ord.increasing)
 
 end Sep
