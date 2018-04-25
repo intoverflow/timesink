@@ -30,34 +30,21 @@ def OrdRel.eq {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
  := begin cases r₁, cases r₂, simp at E, subst E end
 
 def OrdAlg.IdRel (A : OrdAlg.{ℓ₁}) : OrdRel A A
- := { rel := A.ord
+ := { rel := Alg.IdRel _
     , incr := begin
-                intros x₁ x₂ y Lx₂y Lx₁x₂,
-                existsi x₂,
-                exact and.intro Lx₁x₂ Lx₂y
+                intros x₁ x₂ y E H,
+                have E' := E.symm, subst E', clear E,
+                refine exists.intro _ (and.intro rfl H),
               end
     }
 
 def OrdRel_comp {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}} {C : OrdAlg.{ℓ₃}}
     (g : OrdRel B C) (f : OrdRel A B)
   : OrdRel A C
- := { rel := g.rel ∘ B.ord ∘ f.rel
+ := { rel := g.rel ∘ f.rel
     , incr := begin
                 intros x₁ x₂ y₃ Lx₂y Lx₁x₂,
-                dsimp at *,
-                cases Lx₂y with y₂ H,
-                cases H with H Hgy₂y₃,
-                cases H with y₁ H,
-                cases H with Hfx₂y₁ Ly₁y₂,
                 exact sorry
-                -- have Q := f.incr _ _ _ Hfx₂y₁ Lx₁x₂,
-                -- cases Q with y₀ H, cases H with Hfx₁y₀ Ly₀y₁,
-                -- --
-                -- have Q := g.incr _ _ _ Hgy₂y₃ Ly₁y₂,
-                -- cases Q with y H, cases H with Hgy₁y Lyy₃,
-                -- refine exists.intro _ (and.intro _ _),
-                -- refine exists.intro _ (and.intro _ Hgy₁y₀),
-                -- refine exists.intro _ (and.intro _ _),
               end
     }
 

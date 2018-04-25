@@ -326,31 +326,15 @@ def OrdAlg.ToSection_FromSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
       { intro H,
         have Q := OrdAlg.to_section.surj XC x,
         cases Q with y' E, subst E,
-        refine exists.intro (y.fn { val := _, property := ZeroPt.Everywhere })
-                (and.intro
-                  (exists.intro _
-                    (and.intro rfl _))
-                  _),
-        { exact sorry -- is true by H
-        },
-        { have Q := OrdAlg.to_section.surj XC y,
-          cases Q with y' E, subst E,
-          exact rfl
-        }
+        have Q := OrdAlg.to_section.surj XC y,
+        cases Q with y₀ E, subst E,
+        refine exists.intro y₀ (and.intro H rfl),
       },
       { intro H, cases H with w H,
-        cases H with H E₂,
+        cases H with E₁ E₂,
+        have E₁' := E₁.symm, subst E₁', clear E₁,
         have E₂' := E₂.symm, subst E₂', clear E₂,
-        cases H with v H, cases H with E H,
-        have E' := E.symm, subst E', clear E,
-        intro p,
-        have Q := cast (Localization.locl.iff₂ X.refl X.trans) H,
-        cases Q with x Q, cases Q with Q Lxw,
-        cases Q with y Q, cases Q with Lvy Q,
-        apply cast (Localization.locl.iff₂ X.refl X.trans).symm,
-        refine exists.intro _ (and.intro _ Lxw),
-        refine exists.intro _ (and.intro Lvy _),
-        exact sorry -- is true by Q
+        exact rfl
       }
     end
 
@@ -361,9 +345,14 @@ def OrdAlg.FromSection_ToSection {X : OrdAlg.{ℓ}} (XC : X.ord.Closed)
       apply OrdRel.eq,
       apply funext, intro x, apply funext, intro y,
       apply eq.symm, apply iff.to_eq, apply iff.intro,
-      { exact sorry
+      { intro E, have E' : x = y := E, subst E', clear E,
+        exact exists.intro (S.to_section XC x) (and.intro rfl rfl)
       },
-      { exact sorry
+      { intro H, cases H with w H,
+        cases H with E₁ E₂,
+        have E₁' := E₁.symm, subst E₁', clear E₁,
+        have E₂' := OrdAlg.to_section.inj XC E₂, subst E₂', clear E₂,
+        exact rfl
       }
     end
 
