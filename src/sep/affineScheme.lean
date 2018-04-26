@@ -314,7 +314,23 @@ def JoinRel.Spec {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
                       (s.fn { val := (JoinRel.Map r rJ).map p.val
                             , property := (JoinRel.Map r rJ).in_preimage p
                             })
-          , action := sorry
+          , action
+             := begin
+                  apply funext, intro s, apply funext, intro t,
+                  apply iff.to_eq, apply iff.intro,
+                  { intro H, intro q,
+                    cases H with t' H, cases H with H Lt,
+                    cases H with s' H, cases H with Ls H,
+                    have Q := H q, clear H,
+                    --
+                    apply cast (congr_fun (congr_fun r.action _) _),
+                    -- refine exists.intro _ (and.intro (exists.intro _ (and.intro _ Q)) _),
+                    --
+                    exact sorry
+                  },
+                  { exact sorry
+                  }
+                end
           }
         , res := sorry
         }
