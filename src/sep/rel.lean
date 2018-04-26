@@ -1469,5 +1469,9 @@ def Rel.Closed {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}} (r: Rel A B)
   : Prop
  := r.UpClosed ∨ r.DownClosed
 
+def Rel.Flip {A : Alg.{ℓ₁}} {B : Alg.{ℓ₂}}
+    (r: Rel A B)
+  : Rel B A
+ := λ b a, r a b
 
 end Sep

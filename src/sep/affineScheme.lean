@@ -289,7 +289,7 @@ def PrimeRel.Spec {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     , sh :=
         { rel := λ U,
           { rel := λ s t
-            , ∀ (p : {p // p ∈ (OrdAlg.Top B).Open (((PrimeRel.Map r rP).preimage U).val)})
+            , ∀ (p : {p // p ∈ B.Top.Open (((PrimeRel.Map r rP).preimage U).val)})
               , r.rel (s.fn { val := (PrimeRel.Map r rP).map p.val
                             , property := (PrimeRel.Map r rP).in_preimage p
                             })
@@ -309,7 +309,7 @@ def JoinRel.Spec {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     , sh :=
         { rel := λ U,
           { rel := λ s t
-            , ∀ (p : {p // p ∈ (OrdAlg.Top A).Open (((JoinRel.Map r rJ).preimage U).val)})
+            , ∀ (p : {p // p ∈ A.Top.Open (((JoinRel.Map r rJ).preimage U).val)})
               , r.rel (t.fn p)
                       (s.fn { val := (JoinRel.Map r rJ).map p.val
                             , property := (JoinRel.Map r rJ).in_preimage p
@@ -320,5 +320,45 @@ def JoinRel.Spec {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
         }
     , stalk := true.intro
     }
+
+def JoinRel.Spec.JoinRel {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+    (r : OrdRel A B)
+    (rJ : r.JoinRel)
+    (rDC : r.rel.DownClosed)
+    (p : A.Pt)
+  : ((JoinRel.Spec r rJ).sh.rel (eq (Nhbd ((JoinRel.Map r rJ).map p)))).rel.Flip.DownClosed
+ := begin
+      intros x₁ x₂ y₁ y₂ y₃ R₁ R₂ J,
+      dsimp [Rel.Flip, OrdAlg.Spec, OrdAlg.Struct, Sheaf.DirectIm] at *,
+      --
+      have Hp : p ∈ (OrdAlg.Top A).Open (((JoinRel.Map r rJ).preimage (eq (Nhbd ((JoinRel.Map r rJ).map p)))).val), from
+        begin
+          existsi A.OpenBasis.Open (Nhbd p),
+          refine exists.intro _ Nhbd.mem,
+          refine exists.intro (Nhbd p) (and.intro _ rfl),
+          exact sorry
+        end,
+      have R₁' := R₁ { val := p, property := Hp }, clear R₁,
+      have R₂' := R₂ { val := p, property := Hp }, clear R₂,
+      have Jy' := J { val := (JoinRel.Map r rJ).map p
+                    , property := (JoinRel.Map r rJ).in_preimage { val := p, property := Hp }
+                    }, clear J,
+      dsimp at *,
+      have Q := rDC R₁' R₂' Jy',
+      --
+      cases Q with x₃ Q, cases Q with R₃ Jx,
+      refine exists.intro
+              { fn := λ p, x₃
+              , continuous := sorry
+              }
+              _,
+      apply and.intro,
+      { intro q, simp,
+        exact sorry -- continuity of y₃
+      },
+      { intro q, simp,
+        exact sorry -- continuity of x₁ and x₂
+      }
+    end
 
 end Sep
