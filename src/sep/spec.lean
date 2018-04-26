@@ -207,10 +207,11 @@ def PrimeRel.Map {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
   : Map B.Top A.Top
  := { map
        := λ p
-          , { set := r.action.FnInv p.set
+          , { set := r.rel.FnInv p.set
             , prime := rP.prime p.prime
             , fixed
                 := begin
+                    rw r.action.symm,
                     apply funext, intro a₁,
                     apply iff.to_eq, apply iff.intro,
                     { intro H,
@@ -239,6 +240,7 @@ def PrimeRel.Map {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
                   end
             , non_increasing
                 := begin
+                    rw r.action.symm,
                     apply funext, intro x₁,
                     apply eq.symm, apply iff.to_eq, apply iff.intro,
                     { intro F, exact false.elim F },
@@ -252,6 +254,7 @@ def PrimeRel.Map {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
                       refine and.intro _ Hpb₄,
                       apply rP.increasing,
                       refine exists.intro _ (and.intro Hx _),
+                      rw r.action.symm,
                       refine exists.intro _ (and.intro _ (B.trans _ _ _ Lb Lb₃b₄)),
                       refine exists.intro _ (and.intro Lx Rx₂b₂)
                     }
@@ -267,7 +270,7 @@ def JoinRel.Map {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
   : Map A.Top B.Top
  := { map
        := λ p
-          , { set := (r.action.Fn p.set.Compl).Compl
+          , { set := (r.rel.Fn p.set.Compl).Compl
             , prime
                := begin
                     apply Set.JoinClosed.Complement_Prime,
@@ -277,6 +280,7 @@ def JoinRel.Map {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
                   end
             , fixed
                 := begin
+                    rw r.action.symm,
                     apply funext, intro b₂,
                     apply iff.to_eq, apply iff.intro,
                     { intros H F,

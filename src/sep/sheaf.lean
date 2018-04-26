@@ -59,8 +59,7 @@ structure SheafMorphism {A : Type.{ℓ₁}} {TA : Topology A}
     (S₁ S₂ : Sheaf TA)
  := (rel : ∀ (U : TA.OI), OrdRel (S₁.Section U) (S₂.Section U))
     (res : ∀ (U₁ U₂ : TA.OI) (H : TA.Open U₂ ⊆ TA.Open U₁)
-           , (S₂.ρ _ _ H).action ∘ (rel U₁).action
-              = (rel U₂).action ∘ (S₁.ρ _ _ H).action)
+           , (S₂.ρ _ _ H) ∘∘ (rel U₁) = (rel U₂) ∘∘ (S₁.ρ _ _ H))
 
 structure OrdAlgSpace
  := (Pt : Type.{ℓ₁})

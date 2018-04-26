@@ -470,100 +470,39 @@ def locl.DownClosed {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
 
 end Localization
 
-def Set.Localizable {A : OrdAlg.{ℓ}} (S : Set A.alg)
-  : Prop
- := (Localization.locl S A.ord).Trans
-
--- def Localizable.union {A : OrdAlg.{ℓ}}
---     {S₁ S₂ : Set A.alg}
---     (H₁ : S₁.Localizable)
---     (H₂ : S₂.Localizable)
---   : (S₁ ∪ S₂).Localizable
---  := begin
---       intros a₁ a₂ a₃ L₁ L₂,
---       cases L₁ with _ _ R₁  _ x₁ y₁ _ s₁ Hs₁ Rx₁ Ry₁ J₁ ; clear L₁,
---       { cases L₂ with _ _ R₂  _ x₂ y₂ _ s₂ Hs₂ Rx₂ Ry₂ J₂ ; clear L₂,
---         { apply Localization.locl.base,
---           apply A.trans, repeat { assumption }
---         },
---         { refine Localization.locl.join Hs₂ _ Ry₂ J₂,
---           apply A.trans, repeat { assumption }
---         }
---       },
---       { cases L₂ with _ _ R₂  _ x₂ y₂ _ s₂ Hs₂ Rx₂ Ry₂ J₂ ; clear L₂,
---         { refine Localization.locl.join Hs₁ Rx₁ _ J₁,
---           apply A.trans, repeat { assumption }
---         },
---         { exact sorry -- not true?
---         }
---       }
---     end
-
-def OrdAlg.Localize (A : OrdAlg.{ℓ}) (S : Set A.alg)
-    (H : (Localization.locl S A.ord).Trans)
+def OrdAlg.Localize (A : OrdAlg.{ℓ})
+    (S : Set A.alg) (SJC : S.JoinClosed) (HS : A.ord.Local S)
   : OrdAlg.{ℓ}
  := { alg := A.alg
     , ord := Localization.locl S A.ord
     , refl := Localization.locl.refl A.refl
-    , trans := H
+    , trans
+       := begin
+            apply Localization.locl.trans,
+            { apply SJC },
+            { cases A.closed with H H,
+              { apply or.inl (and.intro HS @H) },
+              { exact or.inr @H }
+            },
+            { apply A.refl },
+            { apply A.trans }
+          end
+    , closed
+       := begin
+            cases A.closed with H H,
+            { apply or.inl,
+              apply @Localization.locl.UpClosed,
+              { exact @H },
+              { exact A.trans }
+            },
+            { apply or.inr,
+              apply @Localization.locl.DownClosed,
+              { exact SJC },
+              { exact @H },
+              { exact A.refl },
+              { exact A.trans }
+            }
+          end
     }
-
-def UpClosed.JoinClosed.Localize (A : OrdAlg.{ℓ})
-    (AUC : A.ord.UpClosed)
-    (S : Set A.alg) (HS : A.ord.Local S) (SJC : S.JoinClosed)
-  : OrdAlg.{ℓ}
- := OrdAlg.Localize A S
-      begin
-        apply Localization.locl.trans,
-        { apply SJC },
-        { exact or.inl (and.intro HS @AUC) },
-        { apply A.refl },
-        { apply A.trans }
-      end
-
-def UpClosed.Prime.Localize (A : OrdAlg.{ℓ})
-    (AUC : A.ord.UpClosed)
-    (p : Set A.alg) (Hp : A.ord.Local p.Compl) (pPrime : p.Prime)
-  : OrdAlg.{ℓ}
- := UpClosed.JoinClosed.Localize A @AUC p.Compl Hp
-      (Set.Prime.Complement_JoinClosed pPrime)
-
-
-def DownClosed.JoinClosed.Localize (A : OrdAlg.{ℓ})
-    (ADC : A.ord.DownClosed)
-    (S : Set A.alg) (SJC : S.JoinClosed)
-  : OrdAlg.{ℓ}
- := OrdAlg.Localize A S
-      begin
-        apply Localization.locl.trans,
-        { apply SJC },
-        { exact or.inr @ADC },
-        { apply A.refl },
-        { apply A.trans }
-      end
-
-def DownClosed.Prime.Localize (A : OrdAlg.{ℓ})
-    (ADC : A.ord.DownClosed)
-    (p : Set A.alg) (pPrime : p.Prime)
-  : OrdAlg.{ℓ}
- := DownClosed.JoinClosed.Localize A @ADC p.Compl
-      (Set.Prime.Complement_JoinClosed pPrime)
-
-
-def Flat.JoinClosed.Localize (A : OrdAlg.{ℓ})
-    (AUC : A.ord.UpClosed)
-    (ADC : A.ord.DownClosed)
-    (S : Set A.alg) (HS : A.ord.Local S) (SJC : S.JoinClosed)
-  : UpClosed.JoinClosed.Localize A @AUC S HS SJC
-      = DownClosed.JoinClosed.Localize A @ADC S SJC
- := rfl
-
-def Flat.Prime.Localize (A : OrdAlg.{ℓ})
-    (AUC : A.ord.UpClosed)
-    (ADC : A.ord.DownClosed)
-    (p : Set A.alg) (Hp : A.ord.Local p.Compl) (pPrime : p.Prime)
-  : UpClosed.Prime.Localize A @AUC p Hp pPrime
-      = DownClosed.Prime.Localize A @ADC p pPrime
- := rfl
 
 end Sep

@@ -12,6 +12,16 @@ universes ℓ₁ ℓ₂ ℓ₃ ℓ₄
 def Rel (A₁ : Alg.{ℓ₁}) (A₂ : Alg.{ℓ₂})
   := A₁.τ → Set A₂
 
+def FunRel {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}}
+    (f : A₁.τ → A₂.τ)
+  : Rel A₁ A₂
+ := λ x y, y = f x
+
+def InvFunRel {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}}
+    (f : A₁.τ → A₂.τ)
+  : Rel A₂ A₁
+ := λ y x, y = f x
+
 instance Rel_has_le {A₁ : Alg.{ℓ₁}} {A₂ : Alg.{ℓ₂}} : has_le (Rel A₁ A₂)
  := { le := λ r₁ r₂, ∀ x, r₁ x ⊆ r₂ x
     }

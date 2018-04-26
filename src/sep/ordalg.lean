@@ -11,6 +11,21 @@ structure OrdAlg : Type.{ℓ₁ + 1}
     (ord : Rel alg alg)
     (refl : ord.Refl)
     (trans : ord.Trans)
+    (closed : ord.Closed)
+
+def OrdAlg.ord_ord (A : OrdAlg.{ℓ₁})
+  : A.ord ∘ A.ord = A.ord
+ := begin
+      apply funext, intro x, apply funext, intro y,
+      apply iff.to_eq, apply iff.intro,
+      { intro H,
+        cases H with w H, cases H with H₁ H₂,
+        apply A.trans, repeat { assumption }
+      },
+      { intro H, existsi x,
+        exact and.intro (A.refl _) H
+      }
+    end
 
 instance OrdAlg_has_le {A : OrdAlg.{ℓ₁}} : has_le A.alg.τ
  := { le := A.ord
@@ -18,10 +33,30 @@ instance OrdAlg_has_le {A : OrdAlg.{ℓ₁}} : has_le A.alg.τ
 
 structure OrdRel (A : OrdAlg.{ℓ₁}) (B : OrdAlg.{ℓ₂})
  := (rel : Rel A.alg B.alg)
-    (incr : ∀ x₁ x₂ y₂
-              (R₂ : rel x₂ y₂)
-              (Lx : x₁ ≤ x₂)
-            , ∃ y₁, rel x₁ y₁ ∧ y₁ ≤ y₂)
+    (action : B.ord ∘ rel ∘ A.ord = rel)
+
+def Rel.OrdRel {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}} (r : Rel A.alg B.alg)
+  : OrdRel A B
+ := { rel := B.ord ∘ r ∘ A.ord
+    , action := calc B.ord ∘ (B.ord ∘ r ∘ A.ord) ∘ A.ord
+                          = (B.ord ∘ B.ord) ∘ r ∘ (A.ord ∘ A.ord) : sorry
+                      ... = B.ord ∘ r ∘ A.ord                     : by rw [B.ord_ord, A.ord_ord]
+    }
+
+def OrdRel.incr {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
+    (r : OrdRel A B)
+  : ∀ x₁ x₂ y₂
+      (R₂ : r.rel x₂ y₂)
+      (Lx : x₁ ≤ x₂)
+    , ∃ y₁, r.rel x₁ y₁ ∧ y₁ ≤ y₂
+ := begin
+      intros x₁ x₂ y₂ R₂ Lx,
+      existsi y₂,
+      refine and.intro _ (B.refl _),
+      rw r.action.symm,
+      refine exists.intro _ (and.intro _ (B.refl _)),
+      exact exists.intro _ (and.intro Lx R₂)
+    end
 
 def OrdRel.eq {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     {r₁ r₂ : OrdRel A B}
@@ -30,22 +65,19 @@ def OrdRel.eq {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
  := begin cases r₁, cases r₂, simp at E, subst E end
 
 def OrdAlg.IdRel (A : OrdAlg.{ℓ₁}) : OrdRel A A
- := { rel := Alg.IdRel _
-    , incr := begin
-                intros x₁ x₂ y E H,
-                have E' := E.symm, subst E', clear E,
-                refine exists.intro _ (and.intro rfl H),
-              end
+ := { rel := A.ord
+    , action := eq.trans (Rel_comp.congr rfl A.ord_ord) A.ord_ord,
     }
 
 def OrdRel_comp {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}} {C : OrdAlg.{ℓ₃}}
     (g : OrdRel B C) (f : OrdRel A B)
   : OrdRel A C
- := { rel := g.rel ∘ f.rel
-    , incr := begin
-                intros x₁ x₂ y₃ Lx₂y Lx₁x₂,
-                exact sorry
-              end
+ := { rel := g.rel ∘ B.ord ∘ f.rel
+    , action
+       := calc C.ord ∘ (g.rel ∘ B.ord ∘ f.rel) ∘ A.ord
+                   = C.ord ∘ (g.rel ∘ (B.ord ∘ B.ord ∘ B.ord) ∘ f.rel) ∘ A.ord : by repeat {rw B.ord_ord}
+               ... = (C.ord ∘ g.rel ∘ B.ord) ∘ B.ord ∘ (B.ord ∘ f.rel ∘ A.ord) : sorry
+               ... = g.rel ∘ B.ord ∘ f.rel     : by rw [g.action, f.action],
     }
 
 reserve infixr ` ∘∘ ` : 100
@@ -139,21 +171,16 @@ def OrdRel.StrongDownClosed.LocallyDownClosedPres {A : OrdAlg.{ℓ₁}} {B : Ord
       exact rDC.rel Jz R₁ R₂ R₃
     end
 
-def OrdRel.action {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
-    (r : OrdRel A B)
-  : Rel A.alg B.alg
- := B.ord ∘ r.rel ∘ A.ord
-
 structure OrdRel.PrimeRel {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     (r : OrdRel A B)
   : Prop
- := (prime : r.action.FnPrimePres)
-    (increasing : r.action.Fn A.ord.increasing ⊆ B.ord.increasing)
+ := (prime : r.rel.FnPrimePres)
+    (increasing : r.rel.Fn A.ord.increasing ⊆ B.ord.increasing)
 
 structure OrdRel.JoinRel {A : OrdAlg.{ℓ₁}} {B : OrdAlg.{ℓ₂}}
     (r : OrdRel A B)
   : Prop
- := (join : r.action.FnJoinClosedPres)
-    (increasing : B.ord.increasing ⊆ r.action.Fn A.ord.increasing)
+ := (join : r.rel.FnJoinClosedPres)
+    (increasing : B.ord.increasing ⊆ r.rel.Fn A.ord.increasing)
 
 end Sep
