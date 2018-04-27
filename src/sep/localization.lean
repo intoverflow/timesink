@@ -188,7 +188,7 @@ def locl.iff₂ {A : Alg.{ℓ}} {S : Set A} {r : Rel A A}
 
 def locl.trans {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
     (SJC : S.JoinClosed)
-    (r_closed : (r.Local S ∧ r.UpClosed) ∨ r.DownClosed)
+    (r_closed : (r.Local S ∧ r.LocallyUpClosed S) ∨ r.LocallyDownClosed S)
     (r_refl : r.Refl)
     (r_trans : r.Trans)
   : (locl S r).Trans
@@ -205,7 +205,7 @@ def locl.trans {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
           clear Ry₁₂ Rx₂₃,
           cases r_closed with rUC rDC,
           { cases rUC with Hr rUC,
-            have Q := rUC J₁₂ Ryx,
+            have Q := rUC _ _ _ _ Hs₁₂ J₁₂ Ryx,
             cases Q with s₁₂' Q, cases Q with x₁₂' Q,
             cases Q with J' Q, cases Q with Rs₁₂' Rx₁₂',
             have Rx : r x₁ x₁₂' := r_trans _ _ _ Rx₁₂ Rx₁₂',
@@ -221,7 +221,7 @@ def locl.trans {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
               exact locl.join Hs₂₃ (r_trans _ _ _ Rx Rx') Ry₂₃ J₂₃
             }
           },
-          { have Q := rDC (r_refl _) Ryx J₂₃,
+          { have Q := rDC _ _ _ _ _ Hs₂₃ J₂₃ (r_refl _) Ryx,
             cases Q with y₂₃' Q, cases Q with Ry₂₃' J',
             apply A.assoc J₁₂ (A.comm J'), intro a₁,
             apply A.assoc a₁.J₁ (A.comm a₁.J₂), intro s,
@@ -481,8 +481,15 @@ def OrdAlg.Localize (A : OrdAlg.{ℓ})
             apply Localization.locl.trans,
             { apply SJC },
             { cases A.closed with H H,
-              { apply or.inl (and.intro HS @H) },
-              { exact or.inr @H }
+              { apply or.inl,
+                apply and.intro HS,
+                apply UpClosed.LocallyUpClosed,
+                assumption
+              },
+              { apply or.inr,
+                apply DownClosed.LocallyDownClosed,
+                assumption
+              }
             },
             { apply A.refl },
             { apply A.trans }
