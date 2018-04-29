@@ -119,6 +119,15 @@ def locl.refl {A : Alg.{ℓ}} {S : Set A} {r : Rel A A}
   : (locl S r).Refl
  := λ a, locl.base S (r_refl a)
 
+def locl.locl_step {A : OrdAlg.{ℓ}} {S : Set A.alg}
+    {x y} (H : locl_step S x y)
+  : locl S A.ord x y
+ := begin
+      cases H,
+      { apply locl.refl A.refl },
+      { apply locl.join Hs (A.refl _) (A.refl _) J }
+    end
+
 def locl.increasing₁ {A : Alg.{ℓ}} {S : Set A} {r : Rel A A}
     (r_refl : r.Refl)
   : S ⊆ (locl S r).increasing
@@ -470,7 +479,7 @@ def locl.DownClosed {A : Alg.{ℓ}} (S : Set A) (r : Rel A A)
 
 end Localization
 
-def OrdAlg.Localize (A : OrdAlg.{ℓ})
+def OrdAlg.Localize (A : OrdAlg.{ℓ}) (AC : A.ord.Closed)
     (S : Set A.alg) (SJC : S.JoinClosed) (HS : A.ord.Local S)
   : OrdAlg.{ℓ}
  := { alg := A.alg
@@ -480,7 +489,7 @@ def OrdAlg.Localize (A : OrdAlg.{ℓ})
        := begin
             apply Localization.locl.trans,
             { apply SJC },
-            { cases A.closed with H H,
+            { cases AC with H H,
               { apply or.inl,
                 apply and.intro HS,
                 apply UpClosed.LocallyUpClosed,
@@ -494,22 +503,22 @@ def OrdAlg.Localize (A : OrdAlg.{ℓ})
             { apply A.refl },
             { apply A.trans }
           end
-    , closed
-       := begin
-            cases A.closed with H H,
-            { apply or.inl,
-              apply @Localization.locl.UpClosed,
-              { exact @H },
-              { exact A.trans }
-            },
-            { apply or.inr,
-              apply @Localization.locl.DownClosed,
-              { exact SJC },
-              { exact @H },
-              { exact A.refl },
-              { exact A.trans }
-            }
-          end
+    -- , closed
+    --    := begin
+    --         cases A.closed with H H,
+    --         { apply or.inl,
+    --           apply @Localization.locl.UpClosed,
+    --           { exact @H },
+    --           { exact A.trans }
+    --         },
+    --         { apply or.inr,
+    --           apply @Localization.locl.DownClosed,
+    --           { exact SJC },
+    --           { exact @H },
+    --           { exact A.refl },
+    --           { exact A.trans }
+    --         }
+    --       end
     }
 
 end Sep
