@@ -503,22 +503,26 @@ def OrdAlg.Localize (A : OrdAlg.{ℓ}) (AC : A.ord.Closed)
             { apply A.refl },
             { apply A.trans }
           end
-    -- , closed
-    --    := begin
-    --         cases A.closed with H H,
-    --         { apply or.inl,
-    --           apply @Localization.locl.UpClosed,
-    --           { exact @H },
-    --           { exact A.trans }
-    --         },
-    --         { apply or.inr,
-    --           apply @Localization.locl.DownClosed,
-    --           { exact SJC },
-    --           { exact @H },
-    --           { exact A.refl },
-    --           { exact A.trans }
-    --         }
-    --       end
     }
+
+def OrdAlg.Localize.UpClosed (A : OrdAlg.{ℓ}) (AC : A.ord.UpClosed)
+    (S : Set A.alg) (SJC : S.JoinClosed) (HS : A.ord.Local S)
+  : (A.Localize (or.inl @AC) S SJC HS).ord.UpClosed
+ := begin
+      apply @Localization.locl.UpClosed,
+      { exact @AC },
+      { exact A.trans }
+    end
+
+def OrdAlg.Localize.DownClosed (A : OrdAlg.{ℓ}) (AC : A.ord.DownClosed)
+    (S : Set A.alg) (SJC : S.JoinClosed) (HS : A.ord.Local S)
+  : (A.Localize (or.inr @AC) S SJC HS).ord.DownClosed
+ := begin
+      apply @Localization.locl.DownClosed,
+      { exact SJC },
+      { exact @AC },
+      { exact A.refl },
+      { exact A.trans }
+    end
 
 end Sep

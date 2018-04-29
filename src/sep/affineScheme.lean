@@ -114,6 +114,40 @@ def SecAlg {X : ClosedAlg.{ℓ}} (o : X.Top.OI)
                , (PrimeAlg p.val).trans _ _ _ (L₁₂ p) (L₂₃ p)
     }
 
+def SecAlg.UpClosed (X : OrdAlg.{ℓ}) (XUC : X.ord.UpClosed)
+    (o : X.Top.OI)
+  : (@SecAlg { ClosedAlg
+             . alg := X
+             , closed := or.inl @XUC
+             } o).ord.UpClosed
+ := begin
+      exact sorry
+    end
+
+def SecAlg.DownClosed (X : OrdAlg.{ℓ}) (XDC : X.ord.DownClosed)
+    (o : X.Top.OI)
+  : (@SecAlg { ClosedAlg
+             . alg := X
+             , closed := or.inr @XDC
+             } o).ord.DownClosed
+ := begin
+      exact sorry
+    end
+
+def SecAlg.Closed {X : ClosedAlg.{ℓ}}
+    (o : X.Top.OI)
+  : (SecAlg o).ord.Closed
+ := begin
+      cases X with X XC,
+      cases XC with XC XC,
+      { apply or.inl,
+        apply SecAlg.UpClosed
+      },
+      { apply or.inr,
+        apply SecAlg.DownClosed
+      }
+    end
+
 def ClosedAlg.StructPreSh (X : ClosedAlg.{ℓ})
   : PreSheaf X.Top OrdAlgCat
  := { Section := SecAlg
